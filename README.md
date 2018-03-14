@@ -1,5 +1,24 @@
 # user-invites
 
+when ssb was younger, we created the current invite system,
+henceforth in this document referred to as the "followbot" system.
+special peers called "pubs" can create tokens called "invite codes".
+The invite code allows a new person to connect to the pub, and
+request a follow.
+
+This generally worked fairly well, but had some problems:
+
+* not clear who invited who.
+* people were confused about what a "pub" was
+* sometimes pubs failed to follow back.
+* some pubs more inviting than others "too open"
+* hard to tell if growth was word of mouth or not
+
+## solution: user-invites
+
+These are invites created directly by _users_ to directly
+invite one new person.
+
 * user creates invite, publishes stub, sends invite to guest
 * guest publishes voucher, which uses accept
 * guest calls pub passes accept message directly.
@@ -98,6 +117,9 @@ you should discuss with the host (person who invited you).
 If you don't accept their invite as is, there should be
 some back-and-forth.
 
+Problem: alice wants to also give some private information to bob,
+for example, a welcome message, or to add bob to a private group (coming soon)
+
 ---
 
 ## interactions with pubs.
@@ -115,6 +137,21 @@ The pub then records that acceptance on their log.
 
 ---
 
+Notes on [sameAs](https://github.com/ssbc/ssb-same-as#assert-that-you-are-the-same-as-another-feed)
+
+two peers create messages pointing to each other,
+``` js
+{
+  type: 'contact',
+  sameAs: other_feed
+}
+```
+
+if `other_feed` has a sameAs pointing back to this one,
+then the feeds are considered merged.
+
+---
+
 question: what is the pub policy?
 
 the pub should follow anyone who they would have replicated,
@@ -125,6 +162,34 @@ connect and give you the thing. The invite should include
 multiple pubs (say, 3?). 
 ---
 
+Alice creates joins the network using Pub, which is run by Charles.
+
+Alice creates an invite, and sends it to Bob, with the Pub address
+on it.
+
+Bob connects to the Pub, and convinces it that he was invited by alice.
+Bob remembers the pub's address, for the future.
+
+Dawn follows Charles and Alice. She sees the sameAs message that
+links Pub to Charles. He replicates Pub, and sees it has a public
+address. (type: 'address', ...). When she wants to sync Bob or Alice
+she connects to Pub.
+
+Dawn sees that Alice has created an invite, but she doesn't know who
+it is yet. But then she sees that Pub has acknowledged a reciept
+for that invite. Dawn retrives the reciept via ooo, and discovers
+Bob. Since she replicates Alice, this is the second hop from here,
+so she replicates Bob, and says "HI"
+
+---
+
+subsystems:
+
+sameAs - link a pub with a uxer id.
+address - a pub advertises it's public address.
+invite/invite-receipt - uxer creates and invite, and a new uxer accepts it.
+
+---
 
 function createInvite (name, cb) {
   var keys = generate()
@@ -146,6 +211,10 @@ function acceptInvite (invite, keys, cb) {
 ## License
 
 MIT
+
+
+
+
 
 
 
