@@ -8,12 +8,15 @@
     "url": "git://github.com/dominictarr/user-invites.git"
   },
   "dependencies": {
+    "ssb-keys": "^7.0.14"
   },
   "devDependencies": {
+    "ssb-validate": "^3.0.1",
+    "tape": "^4.8.0"
   },
   "scripts": {
     "test": "set -e; for t in test/*.js; do node $t; done"
   },
   "author": "'Dominic Tarr' <dominic.tarr@gmail.com> (dominictarr.com)",
-  "license": "MIT"  
+  "license": "MIT"
 }
