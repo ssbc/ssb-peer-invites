@@ -1,33 +1,8 @@
 var ssbKeys = require('ssb-keys')
 
-var chloride = require('chloride')
+var u = require('./util')
 
-function box (data, key) {
-  if(!data) return
-  var b = new Buffer(JSON.stringify(data))
-  return chloride.crypto_secretbox_easy(b, key.slice(0, 24), key).toString('base64')
-}
-
-function unbox (ctxt, key) {
-  //var b = new Buffer(JSON.stringify(data))
-  var b = new Buffer(ctxt, 'base64')
-  var ptxt = chloride.crypto_secretbox_open_easy(b, key.slice(0, 24), key)
-  if(!ptxt) return
-  try {
-    return JSON.parse(ptxt)
-  } catch(err) {
-    console.error(err)
-  }
-}
-
-
-function hash(s) {
-  return chloride.crypto_hash_sha256(
-    'string' == typeof s ? new Buffer(s, 'utf8') : s
-  )
-}
-
-var invite_key = hash("user-invites:development")
+var invite_key = require('./cap')
 
 exports.createInvite = function (seed, host, reveal, private) {
   var keys = ssbKeys.generate(null, seed) //K
@@ -37,8 +12,8 @@ exports.createInvite = function (seed, host, reveal, private) {
     type: 'invite',
     invite: keys.id,
     host: host, //sign our own key, to prove we created K
-    reveal: box(reveal, hash(hash(seed))),
-    private: box(private, hash(seed))
+    reveal: u.box(reveal, u.hash(u.hash(seed))),
+    private: u.box(private, u.hash(seed))
   })
 }
 
@@ -57,11 +32,11 @@ exports.verifyInvitePublic = function (msg) {
 exports.verifyInvitePrivate = function (msg, seed) {
   exports.verifyInvitePublic(msg)
   if(msg.content.reveal) {
-    var reveal = unbox(msg.content.reveal, hash(hash(seed)))
+    var reveal = u.unbox(msg.content.reveal, u.hash(u.hash(seed)))
     if(!reveal) throw new Error('could not decrypt message to be revealed')
   }
   if(msg.content.private) {
-    var private = unbox(msg.content.private, hash(seed))
+    var private = u.unbox(msg.content.private, u.hash(seed))
     if(!reveal) throw new Error('could not decrypt private message')
   }
 
@@ -76,7 +51,7 @@ exports.createAccept = function (msg, seed, id) {
     type: 'invite/accept',
     reciept: inviteId,
     id: id,
-    key: msg.content.reveal ? hash(hash(seed)).toString('base64') : undefined
+    key: msg.content.reveal ? u.hash(u.hash(seed)).toString('base64') : undefined
   })
 }
 
@@ -87,7 +62,7 @@ exports.verifyAccept = function (accept, invite) {
   if(accept.author === invite.content.id)
     throw new Error('invitee must use a new key, not the same seed')
   if(invite.content.reveal) {
-    reveal = unbox(invite.content.reveal, new Buffer(accept.content.key, 'base64'))
+    reveal = u.unbox(invite.content.reveal, new Buffer(accept.content.key, 'base64'))
     if(!reveal) throw new Error('accept did not correctly reveal invite')
   }
 
@@ -98,4 +73,5 @@ exports.verifyAccept = function (accept, invite) {
     throw new Error('acceptance must be signed by claimed key')
   return reveal || true
 }
+
 
