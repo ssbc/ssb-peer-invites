@@ -71,13 +71,17 @@ exports.verifyAccept = function (accept, invite) {
   if(invite.content.type !== 'invite')
     throw code(new Error('accept must be type: invite, was:'+accept.content.type), 'user-invites:invite-message-type')
 
-  var reveal
   var invite_id = '%'+ssbKeys.hash(JSON.stringify(invite, null, 2))
+  var reveal
+
   if(invite_id !== accept.content.receipt)
     throw code(new Error('acceptance not matched to given invite, got:'+invite_id+' expected:'+accept.content.receipt), 'accept-wrong-invite')
+
   if(accept.author === invite.content.id)
     throw code(new Error('invitee must use a new key, not the same seed'), 'guest-key-reuse')
   if(invite.content.reveal) {
+    if(!accept.content.key)
+      throw code(new Error('accept missing reveal key, when invite has it'), 'accept-must-reveal-key')
     reveal = u.unbox(invite.content.reveal, new Buffer(accept.content.key, 'base64'))
     if(!reveal) throw code(new Error('accept did not correctly reveal invite'), 'decrypt-accept-reveal-failed')
   }
@@ -89,6 +93,14 @@ exports.verifyAccept = function (accept, invite) {
     throw code(new Error('acceptance must be signed by claimed key'), 'accept-signature-failed')
   return reveal || true
 }
+
+
+
+
+
+
+
+
 
 
 
