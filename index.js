@@ -60,6 +60,7 @@ exports.createAccept = function (msg, seed, id) {
   
   var inviteId = ssbKeys.hash(JSON.stringify(msg, null, 2))
   return ssbKeys.signObj(keys, null, {
+    type: 'invite/accept',
     reciept: inviteId,
     id: id,
     key: msg.content.reveal ? hash(hash(seed)).toString('base64') : undefined
@@ -82,7 +83,4 @@ exports.verifyAccept = function (accept, invite) {
     throw new Error('acceptance must be signed by claimed key')
   return reveal || true
 }
-
-
-
 
