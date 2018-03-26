@@ -7,7 +7,6 @@ function box (data, key) {
 }
 
 function unbox (ctxt, key) {
-  //var b = new Buffer(JSON.stringify(data))
   var b = new Buffer(ctxt, 'base64')
   var ptxt = chloride.crypto_secretbox_open_easy(b, key.slice(0, 24), key)
   if(!ptxt) return
