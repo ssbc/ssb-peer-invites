@@ -1,4 +1,14 @@
 var I = require('./valid')
+var Reduce = require('flumeview-reduce')
+
+function code(err, c) {
+  err.code = 'user-invites:'+c
+  return err
+}
+var pull = require('pull-stream')
+function all (stream, cb) {
+  return pull(stream, pull.collect(cb))
+}
 
 /*
 uxer (someone who observes an invite, but not directly involved):
@@ -38,7 +48,13 @@ exports.name = 'invites'
 
 exports.version = '1.0.0'
 exports.manifest = {
+  getInvite: 'async',
+  accept: 'async',
+//  create: 'async'
+}
 
+exports.permissions = {
+//  master: {allow: ['create']}
 }
 
 // KNOWN BUG: it's possible to accept an invite more than once,
@@ -48,9 +64,10 @@ exports.manifest = {
 // other peers would think a different feed accepted that invite)
 // I guess the answer is to let alice reject the second invite?)
 // that would be easier to do if this was a levelreduce? (keys: reduce, instead of a single reduce?)
+
 exports.init = function (sbot, config) {
 
-  var index = sbot._flumeUse('invites', Reduce(1, function (acc, data) {
+  var invites = sbot._flumeUse('invites', Reduce(1, function (acc, data) {
     if(!acc) acc = {invited: {}, invites:{}, accepts: {}}
 
     var msg = data.value
@@ -70,12 +87,13 @@ exports.init = function (sbot, config) {
     if(invite && accept) {
       if(invite === true)
         return acc
+      var invite_id = accept.content.receipt
       try {
-        I.validateAccept(accept, invite)
+        I.verifyAccept(accept, invite)
         //delete matched invites, but _only_ if they are valid.
-        delete acc.accepts[accept.receipt]
+        delete acc.accepts[invite_id]
         //but remember that this invite has been processed.
-        acc.invites[accept.receipt] = true
+        acc.invites[invite_id] = true
       } catch (err) {
         return acc //? or store something?
       }
@@ -91,14 +109,15 @@ exports.init = function (sbot, config) {
 
   sbot.auth.hook(function (fn, args) {
     var id = args[0], cb = args[1]
-    index.get(function (err, v) {
+    invites.get(function (err, v) {
       if(err) return cb(err)
-      for(var k in v.invites)
-        if(v.invites[k].invite === id)
+      for(var k in v.invites) {
+        if(v.invites[k].content.invite === id)
           return cb(null, {
-            allow: ['invite.getInvite', 'invites.accept'],
+            allow: ['invites.getInvite', 'invites.accept'],
             deny: null
           })
+      }
     })
   })
 
@@ -115,10 +134,7 @@ exports.init = function (sbot, config) {
       else if(invite === true)
         //TODO just retrive all confirmations we know about
         //via links.
-        cb(code(
-          new Error('invite already used:'+invite_id),
-          'invite-already-used'
-        ))
+        sbot.get(invite_id, cb)
       //only allow the guest to request their own invite.
       else if(self.id !== invite.content.invite)
         cb(code(
@@ -137,23 +153,46 @@ exports.init = function (sbot, config) {
     invites.get(function (err, v) {
       var invite_id = accept.content.receipt
       var invite = v.invites[invite_id]
+
       if(invite === true || accepted[invite_id])
         //TODO: this should return the confirmation, not an error.
-        return cb(code(
-          new Error('invite already used:'+invite_id),
-          'invite-already-used'
-        ))
+        return all(
+          sbot.links({dest: invite_id, values: true, keys: false, meta: false}),
+          function (err, confirms) {
+            if(err) cb(err)
+            else cb(null,
+              confirms.filter(function (e) {
+                try {
+                  return (
+                    e.content.type === 'invite/confirm' &&
+                    e.content.embed.content.receipt === invite_id
+                  )
+                } catch (err) {
+                  return false
+                }
+              })[0]
+            )
+          }
+        )
 
       try {
-        I.validateAccept(accept, invite)
+        I.verifyAccept(accept, invite)
       } catch (err) {
         return cb(err)
       }
       //there is a little race condition here
       accepted[invite_id] = true
-      sbot.publish({type: 'invite/confirm', embed: accept}, function (err, msg) {
+      sbot.publish({
+        type: 'invite/confirm',
+        embed: accept,
+        //second pointer back to receipt, so that links can find it
+        //(since it unfortunately does not handle links nested deeper
+        //inside objects. when we look up the message,
+        //confirm that content.embed.content.receipt is the same)
+        receipt: accept.content.receipt
+      }, function (err, data) {
         delete accepted[invite_id]
-        cb(err, msg)
+        cb(err, data.value)
       })
     })
   }
@@ -161,5 +200,4 @@ exports.init = function (sbot, config) {
   return invites
 
 }
-
 
