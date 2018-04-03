@@ -1,107 +1,161 @@
-var ssbKeys = require('ssb-keys')
+var I = require('./valid')
 
-var u = require('./util')
+/*
+uxer (someone who observes an invite, but not directly involved):
 
-var invite_key = require('./cap')
+if we see
+  someone post an invite I
+  someone else post a confirmation C that I has been accepted A
+  // OOO that A
+  emded that A inside a C(A)
+  match valid I->A's and interpret them like follows.
 
-function code(err, c) {
-  err.code = 'user-invites:'+c
-  return err
+  we only care about confirmations if it's of an invite we follow,
+  and it hasn't been confirmed already.
+
+{
+  invited: {
+    <alice>: { <bob>: true, ...}
+  }
+
+  invites: { <invites>, ...}
+  accepts: { <accepts>, ...}
+
 }
 
-exports.createInvite = function (seed, host, reveal, private) {
-  var keys = ssbKeys.generate(null, seed) //K
-  if(keys.id === host)
-    throw code(new Error('do not create invite with own public key'), 'user-invites:no-own-goal')
-  return ssbKeys.signObj(keys, invite_key, {
-    type: 'invite',
-    invite: keys.id,
-    host: host, //sign our own key, to prove we created K
-    reveal: reveal ? u.box(reveal, u.hash(u.hash(seed))) : undefined,
-    private: private ? u.box(private, u.hash(seed)) : undefined
+---
+
+pub
+
+  someone connects, using key from an open invite I
+  they request that invite I (by it's id)
+  they send a message accepting A the invite.
+  the pub then posts confirmation (I,A)
+
+*/
+
+exports.name = 'invites'
+
+exports.version = '1.0.0'
+exports.manifest = {
+
+}
+
+// KNOWN BUG: it's possible to accept an invite more than once,
+// but peers will ignore subsequent acceptances. it's possible
+// that this could create confusion in certain situations.
+// (but you'd get a feed that some peers thought was invited by Alice
+// other peers would think a different feed accepted that invite)
+// I guess the answer is to let alice reject the second invite?)
+// that would be easier to do if this was a levelreduce? (keys: reduce, instead of a single reduce?)
+exports.init = function (sbot, config) {
+
+  var index = sbot._flumeUse('invites', Reduce(1, function (acc, data) {
+    if(!acc) acc = {invited: {}, invites:{}, accepts: {}}
+
+    var msg = data.value
+    var invite, accept
+    if(msg.content.type === 'invite') {
+      invite = msg
+      accept = acc.accepts[data.key]
+    }
+    else if(msg.content.type === 'invite/accept') {
+      accept = msg
+      invite = acc.invites[accept.content.receipt]
+    }
+    else if(msg.content.type === 'invite/confirm') {
+      accept = msg.content.embed
+      invite = acc.invites[accept.content.receipt]
+    }
+    if(invite && accept) {
+      if(invite === true)
+        return acc
+      try {
+        I.validateAccept(accept, invite)
+        //delete matched invites, but _only_ if they are valid.
+        delete acc.accepts[accept.receipt]
+        //but remember that this invite has been processed.
+        acc.invites[accept.receipt] = true
+      } catch (err) {
+        return acc //? or store something?
+      }
+    }
+    else if(invite)
+      acc.invites[data.key] = invite
+    else if(accept)
+      acc.accepts[accept.receipt] = accept
+
+    return acc
+
+  }))
+
+  sbot.auth.hook(function (fn, args) {
+    var id = args[0], cb = args[1]
+    index.get(function (err, v) {
+      if(err) return cb(err)
+      for(var k in v.invites)
+        if(v.invites[k].invite === id)
+          return cb(null, {
+            allow: ['invite.getInvite', 'invites.accept'],
+            deny: null
+          })
+    })
   })
-}
 
-exports.verifyInvitePublic = function (msg) {
-  if(msg.content.host != msg.author)
-    throw code(new Error('host did not match author'), 'host-must-match-author')
-
-  if(!ssbKeys.verifyObj(msg.content.invite, invite_key, msg.content))
-    throw code(new Error('invalid invite signature'), 'invite-signature-failed')
-
-  //an ordinary message so doesn't use special hmac_key
-  if(!ssbKeys.verifyObj(msg.author, msg))
-    throw code(new Error('invalid host signature'), 'host-signature-failed')
-  return true
-}
-
-exports.verifyInvitePrivate = function (msg, seed) {
-  exports.verifyInvitePublic(msg)
-  if(msg.content.reveal) {
-    var reveal = u.unbox(msg.content.reveal, u.hash(u.hash(seed)))
-    if(!reveal) throw code(new Error('could not decrypt reveal field'), 'decrypt-reveal-failed')
-  }
-  if(msg.content.private) {
-    var private = u.unbox(msg.content.private, u.hash(seed))
-    if(!private) throw code(new Error('could not decrypt private field'), 'decrypt-private-failed')
-  }
-
-  return {reveal: reveal, private: private}
-}
-
-exports.createAccept = function (msg, seed, id) {
-  exports.verifyInvitePrivate(msg, seed)
-  var keys = ssbKeys.generate(null, seed) //K
-  if(keys.id != msg.content.invite)
-    throw code(new Error('seed does not match invite'), 'seed-must-match-invite')
-  var inviteId = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
-  return ssbKeys.signObj(keys, invite_key, {
-    type: 'invite/accept',
-    receipt: inviteId,
-    id: id,
-    key: msg.content.reveal ? u.hash(u.hash(seed)).toString('base64') : undefined
-  })
-}
-
-exports.verifyAccept = function (accept, invite) {
-  if(!invite) throw new Error('invite must be provided')
-
-  if(accept.content.type !== 'invite/accept')
-    throw code(new Error('accept must be type: "invite/accept", was:'+JSON.stringify(accept.content.type)), 'user-invites:accept-message-type')
-  if(invite.content.type !== 'invite')
-    throw code(new Error('accept must be type: invite, was:'+accept.content.type), 'user-invites:invite-message-type')
-
-  var invite_id = '%'+ssbKeys.hash(JSON.stringify(invite, null, 2))
-  var reveal
-
-  if(invite_id !== accept.content.receipt)
-    throw code(new Error('acceptance not matched to given invite, got:'+invite_id+' expected:'+accept.content.receipt), 'accept-wrong-invite')
-
-  if(accept.author === invite.content.id)
-    throw code(new Error('invitee must use a new key, not the same seed'), 'guest-key-reuse')
-  if(invite.content.reveal) {
-    if(!accept.content.key)
-      throw code(new Error('accept missing reveal key, when invite has it'), 'accept-must-reveal-key')
-    reveal = u.unbox(invite.content.reveal, new Buffer(accept.content.key, 'base64'))
-    if(!reveal) throw code(new Error('accept did not correctly reveal invite'), 'decrypt-accept-reveal-failed')
+  //first
+  invites.getInvite = function (invite_id, cb) {
+    var self = this
+    invites.get(function (err, v) {
+      var invite = v.invites[invite_id]
+      if(err) return cb(err)
+      if(!invite)
+        cb(code(
+          new Error('unknown invite:'+invite_id),
+          'unknown-invite'
+        ))
+      else if(invite === true)
+        cb(code(
+          new Error('invite already used:'+invite_id),
+          'invite-already-used'
+        ))
+      //only allow the guest to request their own invite.
+      else if(self.id !== invite.content.invite)
+        cb(code(
+          new Error('invite did not match client id'),
+          'invite-mismatch'
+        ))
+      else
+        cb(null, v.invites[invite_id])
+    })
   }
 
-  if(!ssbKeys.verifyObj(invite.content.invite, invite_key, accept.content))
-    throw code(new Error('did not verify invite-acceptance contents'), 'accept-invite-signature-failed')
-  //an ordinary message, so does not use hmac_key
-  if(!ssbKeys.verifyObj(accept.content.id, accept))
-    throw code(new Error('acceptance must be signed by claimed key'), 'accept-signature-failed')
-  return reveal || true
+  var accepted = {}
+
+  invites.accept = function (accept, cb) {
+    //check if the invite in question hasn't already been accepted.
+    invites.get(function (err, v) {
+      var invite_id = accept.content.receipt
+      var invite = v.invites[invite_id]
+      if(invite === true || accepted[invite_id])
+        return cb(code(
+          new Error('invite already used:'+invite_id),
+          'invite-already-used'
+        ))
+      try {
+        I.validateAccept(accept, invite)
+      } catch (err) {
+        return cb(err)
+      }
+      //there is a little race condition here
+      accepted[invite_id] = true
+      sbot.publish({type: 'invite/confirm', embed: accept}, function (err, msg) {
+        delete accepted[invite_id]
+        cb(err, msg)
+      })
+    })
+  }
+
+  return invites
+
 }
-
-
-
-
-
-
-
-
-
-
-
 
