@@ -13,6 +13,7 @@
     "ssb-ref": "^2.9.1"
   },
   "devDependencies": {
+    "scuttlebot": "^10.5.0",
     "ssb-validate": "^3.0.1",
     "tape": "^4.8.0"
   },
