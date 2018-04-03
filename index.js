@@ -102,7 +102,6 @@ exports.init = function (sbot, config) {
     })
   })
 
-  //first
   invites.getInvite = function (invite_id, cb) {
     var self = this
     invites.get(function (err, v) {
@@ -114,6 +113,8 @@ exports.init = function (sbot, config) {
           'unknown-invite'
         ))
       else if(invite === true)
+        //TODO just retrive all confirmations we know about
+        //via links.
         cb(code(
           new Error('invite already used:'+invite_id),
           'invite-already-used'
@@ -137,10 +138,12 @@ exports.init = function (sbot, config) {
       var invite_id = accept.content.receipt
       var invite = v.invites[invite_id]
       if(invite === true || accepted[invite_id])
+        //TODO: this should return the confirmation, not an error.
         return cb(code(
           new Error('invite already used:'+invite_id),
           'invite-already-used'
         ))
+
       try {
         I.validateAccept(accept, invite)
       } catch (err) {
@@ -158,4 +161,5 @@ exports.init = function (sbot, config) {
   return invites
 
 }
+
 
