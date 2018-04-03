@@ -2,7 +2,7 @@
 var tape = require('tape')
 var ssbKeys = require('ssb-keys')
 var v = require('ssb-validate')
-var i = require('../')
+var i = require('../valid')
 var u = require('../util')
 
 var invite_key = require('../cap')
@@ -134,6 +134,7 @@ tape('safety', function (t) {
   })
   t.end()
 })
+
 
 
 
