@@ -6,6 +6,5 @@ function hash(s) {
   )
 }
 
-module.exports =  hash("user-invites:development")
-
+module.exports =  hash("user-invites:DEVELOPMENT")
 
