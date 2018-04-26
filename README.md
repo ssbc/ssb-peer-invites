@@ -38,15 +38,18 @@ var seed = random(32) //32 bytes of randomness
 var invite_key = ssbKeys.generate(null, seed)
 var invite_cap = require('ssb-config').caps.invite
 
-ssbKeys.signObj({
-  type: 'invite',
-  invite: invite_key.id,
-  host: alice.id,
+alice_sbot.publish(ssbKeys.signObj({
+    type: 'invite',
+    invite: invite_key.id,
+    host: alice.id,
 
-  //optional fields
-  reveal: box(message_to_be_revealed, hash(hash(seed))),
-  private: box(message_for_bob, hash(seed))
-}, invite_cap, invite_key)
+    //optional fields
+    reveal: box(message_to_be_revealed, hash(hash(seed))),
+    private: box(message_for_bob, hash(seed))
+  }, invite_cap, invite_key),
+  function (err, invite_msg) {
+    ...
+  })
 ```
 `reveal` and `private` are optional, and will
 be discussed later.
@@ -80,23 +83,28 @@ who's invite he is accepting.
 var invite_key = ssbKeys.generate(null, seed)
 var invite_cap = require('ssb-config').caps.invite
 
-ssbKeys.signObj({
-  type: 'invite/accept',
-  receipt: invite_id, //the id of the invite message
-  id: bob.id, //the id we are accepting this invite as.
-  //if the invite has a reveal, key must be included.
-  key: hash(hash(seed))
-}, invite_cap, invite_key)
+sbot_bob.publish(ssbKeys.signObj({
+    type: 'invite/accept',
+    receipt: getId(invite_msg), //the id of the invite message
+    id: bob.id, //the id we are accepting this invite as.
+    //if the invite has a reveal, key must be included.
+    key: hash(hash(seed))
+  }, invite_cap, invite_key),
+  function (err, invite_accept_msg) {
+    ...
+  })
 ```
 
 This is then passed to the pub, who verifies it,
 and if is correct, posts a new message containing it.
 
 ``` js
-{
-  type: 'invite/confirm',
-  embed: invite_accept
-}
+sbot_pub.publish({
+    type: 'invite/confirm',
+    embed: invite_accept_msg //embed the whole message.
+  }, function (err, invite_confirm_msg) {
+    ...
+  })
 ```
 the pub just reposts the whole invite_accept message
 that bob created. this makes the message available
@@ -131,9 +139,6 @@ is secret until bob accepts the invite. This avoids
 revealing anything about bob without his consent
 (he may choose not to accept the invite if he disagrees
 with what alice says about him)
-
-
-
 
 ## License
 
