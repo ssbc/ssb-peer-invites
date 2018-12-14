@@ -34,6 +34,33 @@ on their own feed (`type: 'user-invite/accept'`), and then pass that to the pub,
 who then publishes a confirm message (`type: user-invite/confirm'`).
 Now peers who replicate the pub's feed can see the guest has arrived.
 
+## api
+
+### userInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
+
+does everything needed to create an invite. generates a seed, finds pubs to act
+as introducers, and publishes an invite message.
+
+`id` is the host id to invite from. (optional, will use your default id if not provided).
+private and reveal are information thatis encrypted into the invite, except
+that `private` is read only by the guest, but the key to `reveal` is published
+as the guest accepts the invite. (so it's eventually read by everyone, but only
+if the guest accepts the invite)
+
+user-invites have a lot more accountability than the previous _followbot_ system.
+You can see who invited who. (so if someone invites an asshole, the community can see
+who did that, but the host will already know that, so they'll think twice, or caution
+their friend to not be a jerk) `reveal` can be used to enhance this. It could for
+example - be used to assign someone a name before they are invited.
+
+private can be used for the benefit of the guest. it may contain a welcome message
+or links to threads or channels, or users to follow.
+
+on success, cb is called with `{invite: msgId, seed: seed, pubs: [addr,...]}`
+this information can be sent to the guest as the invite!
+
+
+
 ## example
 
 Alice wishes to invite Bob to her corner of the ssb
@@ -151,6 +178,7 @@ with what alice says about him)
 ## License
 
 MIT
+
 
 
 
