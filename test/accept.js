@@ -14,6 +14,14 @@ var ref = require('ssb-ref')
 
 var createSbot = require('scuttlebot')
   .use(require('ssb-links'))
+  .use({
+    name: 'replicate', version: '1.0.0',
+    manifest: { request: 'sync' },
+    init: function () {
+      return { request: function () {} }
+    }
+  })
+  .use(require('ssb-friends'))
   .use(require('../'))
 
 function all(stream, cb) {
@@ -39,9 +47,7 @@ tape('create an invite', function (t) {
 
   var content = I.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
   alice.publish(content, function (err, msg) {
-//    console.log(msg)
     I.verifyInvitePublic(msg.value)
-  console.log("REMOTE", alice.getAddress())
 
     createClient(
       ssbKeys.generate(null, seed),
@@ -49,7 +55,7 @@ tape('create an invite', function (t) {
         remote: alice.getAddress(),
         caps: require('ssb-config').caps,
         manifest: {
-          invites: {
+          userInvites: {
             getInvite: 'async',
             accept: 'async'
           }
@@ -57,11 +63,11 @@ tape('create an invite', function (t) {
       },
       function (err, _bob) {
         if(err) throw err
-        _bob.invites.getInvite(msg.key, function (err, invite) {
+        _bob.userInvites.getInvite(msg.key, function (err, invite) {
           if(err) throw err
           t.ok(invite)
           t.deepEqual(invite, msg.value)
-          //check this invite is valid.
+          //check this invite is valid. would throw if it wasn't.
           I.verifyInvitePrivate(invite, seed)
 
           //bob chooses to accept this invite.
@@ -69,7 +75,7 @@ tape('create an invite', function (t) {
 
           bob.publish(accept_content, function (err, accept) {
             if(err) throw err
-            _bob.invites.accept(accept.value, function (err, msg) {
+            _bob.userInvites.accept(accept.value, function (err, msg) {
               if(err) throw err
               t.ok(msg)
           var confirm_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
@@ -77,10 +83,11 @@ tape('create an invite', function (t) {
                 if(err) throw err
                 t.deepEqual(msg, _msg)
 
-                _bob.invites.accept(accept.value, function (err, msg2) {
+
+                //calling accept again should return the previous accept message.
+                _bob.userInvites.accept(accept.value, function (err, msg2) {
                   if(err) throw err
                   t.deepEqual(msg2, msg)
-                  console.log('accept2', msg2)
                   alice.close()
                   bob.close()
                   t.end()
@@ -93,14 +100,4 @@ tape('create an invite', function (t) {
     )
   })
 })
-
-
-
-
-
-
-
-
-
-
 
