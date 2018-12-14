@@ -31,7 +31,7 @@ tape('invalid - wrong invitee', function (t) {
   var seed = hash('seed2')
   var keys = ssbKeys.generate(null, seed)
   var invalid = ssbKeys.signObj(keys, invite_key, {
-    type: 'invite',
+    type: 'user-invite',
     invite: ssbKeys.generate(null, hash('seed3')),
     host: alice.id
   })
@@ -57,7 +57,7 @@ tape('invalid - wrong invitee', function (t) {
   var keys = ssbKeys.generate(null, seed)
   var wrong_seed = hash('wrong_seed')
   var invalid = ssbKeys.signObj(keys, invite_key, {
-    type: 'invite',
+    type: 'user-invite',
     invite: keys.id, //correct key
     reveal: u.box({hidden: true}, u.hash(u.hash(wrong_seed))),
     host: alice.id
@@ -82,7 +82,7 @@ tape('invalid - wrong invitee', function (t) {
   }, 'user-invites:decrypt-reveal-failed')
 
   var accept = ssbKeys.signObj(ssbKeys.generate(null, seed), invite_key, {
-    type: 'invite/accept',
+    type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite_msg, null, 2)),
     id: bob.id,
     key: u.hash(u.hash(seed)) //what the reveal key should be.
@@ -96,7 +96,7 @@ tape('invalid - wrong invitee', function (t) {
   }, 'user-invites:decrypt-accept-reveal-failed')
 
   var accept2 = ssbKeys.signObj(ssbKeys.generate(null, seed), invite_key, {
-    type: 'invite/accept',
+    type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite_msg, null, 2)),
     id: bob.id,
     key: u.hash('not the key') //what the reveal key should be.
@@ -141,7 +141,7 @@ tape('wrong invite',  function (t) {
   var invite = v.create(null, alice, null, i.createInvite(seed, alice.id), new Date('2018-03-14T06:14:18.377Z'))
   var seed2 = hash('seed2')
   var accept_content = ssbKeys.signObj(ssbKeys.generate(null, seed2), invite_key, {
-    type: 'invite/accept',
+    type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite, null, 2)),
     id: bob.id,
   })
@@ -162,7 +162,7 @@ tape('wrong invite',  function (t) {
 
   var invite = v.create(null, alice, null, i.createInvite(seed, alice.id, 'REVEAL'), new Date('2018-03-14T06:14:18.377Z'))
   var accept_content = ssbKeys.signObj(ssbKeys.generate(null, seed), invite_key, {
-    type: 'invite/accept',
+    type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite, null, 2)),
     id: bob.id,
     //key is missing!
