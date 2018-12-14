@@ -57,7 +57,7 @@ tape('create an invite', function (t) {
         manifest: {
           userInvites: {
             getInvite: 'async',
-            accept: 'async'
+            confirm: 'async'
           }
         }
       },
@@ -75,7 +75,7 @@ tape('create an invite', function (t) {
 
           bob.publish(accept_content, function (err, accept) {
             if(err) throw err
-            _bob.userInvites.accept(accept.value, function (err, msg) {
+            _bob.userInvites.confirm(accept.value, function (err, msg) {
               if(err) throw err
               t.ok(msg)
           var confirm_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
@@ -85,7 +85,7 @@ tape('create an invite', function (t) {
 
 
                 //calling accept again should return the previous accept message.
-                _bob.userInvites.accept(accept.value, function (err, msg2) {
+                _bob.userInvites.confirm(accept.value, function (err, msg2) {
                   if(err) throw err
                   t.deepEqual(msg2, msg)
                   alice.close()
