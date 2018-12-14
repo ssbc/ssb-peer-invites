@@ -14,17 +14,25 @@ This generally worked fairly well, but had some problems:
 * some pubs more inviting than others "too open"
 * hard to tell if growth was word of mouth or not
 
-## solution: user-invites
+## user invites - how it works
 
-These are invites created directly by _users_ to directly
-invite _one_ new person.
+host (user creating the invite) generates a _seed_, and publishes an invitation
+message (`type:'user-invite'`) for their guest (new user, receiving the invite)
+The message may contain both a private and a reveal section.
+(private section is only readably be the guest, but reveal is published
+if they guest accepts the invite).
 
-* host user creates invite, publishes stub, sends invite to guest
-* guest connects to pub, requests invite message, which contains host identity.
-* guest publishes accept message
-* guest passes accept message to pub directy
-* pub now replicates guest, considering them friend of host, and publishes a "confirm" containing the accept message.
-* other peers can strongly link invite with accept via confirm.
+The host then checks for peers that have a public address and follow them.
+The host provides the guest with the `seed` the invite message id, and
+a short list of [pub addresse](http://github.com/ssbc/ssb-device-address) that may process the invite.
+
+The guest accepting the invite is a two step process. First they use the
+seed and the pub addresses to connect to a pub and request the invite message.
+Here they may read a private message from their host, as well as see what will
+be revealed once they accept. If they accept, they publish a accept message
+on their own feed (`type: 'user-invite/accept'`), and then pass that to the pub,
+who then publishes a confirm message (`type: user-invite/confirm'`).
+Now peers who replicate the pub's feed can see the guest has arrived.
 
 ## example
 
@@ -143,4 +151,9 @@ with what alice says about him)
 ## License
 
 MIT
+
+
+
+
+
 
