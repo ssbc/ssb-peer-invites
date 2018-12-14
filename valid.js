@@ -14,7 +14,7 @@ exports.createInvite = function (seed, host, reveal, private) {
   if(keys.id === host)
     throw code(new Error('do not create invite with own public key'), 'user-invites:no-own-goal')
   return ssbKeys.signObj(keys, invite_key, {
-    type: 'invite',
+    type: 'user-invite',
     invite: keys.id,
     host: host, //sign our own key, to prove we created K
     reveal: reveal ? u.box(reveal, u.hash(u.hash(seed))) : undefined,
@@ -56,7 +56,7 @@ exports.createAccept = function (msg, seed, id) {
     throw code(new Error('seed does not match invite'), 'seed-must-match-invite')
   var inviteId = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
   return ssbKeys.signObj(keys, invite_key, {
-    type: 'invite/accept',
+    type: 'user-invite/accept',
     receipt: inviteId,
     id: id,
     key: msg.content.reveal ? u.hash(u.hash(seed)).toString('base64') : undefined
@@ -64,8 +64,8 @@ exports.createAccept = function (msg, seed, id) {
 }
 
 exports.verifyAcceptOnly = function (accept) {
-  if(accept.content.type !== 'invite/accept')
-    throw code(new Error('accept must be type: "invite/accept", was:'+JSON.stringify(accept.content.type)), 'accept-message-type')
+  if(accept.content.type !== 'user-invite/accept')
+    throw code(new Error('accept must be type: "user-invite/accept", was:'+JSON.stringify(accept.content.type)), 'accept-message-type')
   if(!isMsg(accept.content.receipt))
     throw code(new Error('accept must reference invite message id'), 'accept-reference-invite')
   if(!ssbKeys.verifyObj(accept.content.id, accept))
@@ -77,7 +77,7 @@ exports.verifyAccept = function (accept, invite) {
 
   exports.verifyAcceptOnly(accept)
 
-  if(invite.content.type !== 'invite')
+  if(invite.content.type !== 'user-invite')
     throw code(new Error('accept must be type: invite, was:'+accept.content.type), 'user-invites:invite-message-type')
 
   var invite_id = '%'+ssbKeys.hash(JSON.stringify(invite, null, 2))
@@ -87,7 +87,7 @@ exports.verifyAccept = function (accept, invite) {
     throw code(new Error('acceptance not matched to given invite, got:'+invite_id+' expected:'+accept.content.receipt), 'accept-wrong-invite')
 
   if(accept.author === invite.content.id)
-    throw code(new Error('invitee must use a new key, not the same seed'), 'guest-key-reuse')
+    throw code(new Error('guest must use a new key, not the same seed'), 'guest-key-reuse')
   if(invite.content.reveal) {
     if(!accept.content.key)
       throw code(new Error('accept missing reveal key, when invite has it'), 'accept-must-reveal-key')
