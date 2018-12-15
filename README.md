@@ -59,7 +59,20 @@ or links to threads or channels, or users to follow.
 on success, cb is called with `{invite: msgId, seed: seed, pubs: [addr,...]}`
 this information can be sent to the guest as the invite!
 
+### userInvites.openInvite(invite, cb(err, invite_msg, content)
 
+"open" an invite. retrives the invite message created by the host (using `userInvites.create`)
+and decrypt any encrypted values. since the invite may contain a welcome message, etc,
+user interfaces implementing user interfaces should process user-invites in two steps.
+firstly opening the invite, then accepting (on user confirmation)
+
+calling openInvite will not publish a message, but may make a network connection
+(if you do not already possess the `invite_msg` which you won't the first time)
+
+### userInvites.acceptInvite(invite, cb)
+
+accept the invite. this publishes a `user-invite/accept` message locally,
+and then contacts a pub and asks them publish a confirm message.
 
 ## example
 
@@ -74,7 +87,7 @@ var invite_key = ssbKeys.generate(null, seed)
 var invite_cap = require('ssb-config').caps.invite
 
 alice_sbot.publish(ssbKeys.signObj({
-    type: 'invite',
+    type: 'user-invite',
     invite: invite_key.id,
     host: alice.id,
 
@@ -110,7 +123,7 @@ alice's feed. if the invite has reveal and public
 fields, bob decrypts them.
 
 if bob accepts the invite,
-bob then creates an "invite/accept" message,
+bob then creates an "user-invite/accept" message,
 which is a proof that he has the seed, and knows
 who's invite he is accepting.
 
@@ -119,7 +132,7 @@ var invite_key = ssbKeys.generate(null, seed)
 var invite_cap = require('ssb-config').caps.invite
 
 sbot_bob.publish(ssbKeys.signObj({
-    type: 'invite/accept',
+    type: 'user-invite/accept',
     receipt: getId(invite_msg), //the id of the invite message
     id: bob.id, //the id we are accepting this invite as.
     //if the invite has a reveal, key must be included.
@@ -135,7 +148,7 @@ and if is correct, posts a new message containing it.
 
 ``` js
 sbot_pub.publish({
-    type: 'invite/confirm',
+    type: 'user-invite/confirm',
     embed: invite_accept_msg //embed the whole message.
   }, function (err, invite_confirm_msg) {
     ...
@@ -175,13 +188,52 @@ revealing anything about bob without his consent
 (he may choose not to accept the invite if he disagrees
 with what alice says about him)
 
-## License
+## messages
+
+### user-invite
+
+published by the host when creating the invite.
+
+``` js
+{
+  type: 'user-invite',
+  host: author_id,  // author of this message.
+  invite: guest_temp_id, // public key guest will use to authenticate
+  reveal: boxed,    // encrypted message to be revealed (optional)
+  private: boxed,   // encrypted message for guest only (optional)
+  signature: sig, //signed by `guest_temp_id`, to prove that `author` held that.
+}
+```
+
+### user-invite/accept
+
+published by guest when accepting the above invite.
+
+``` js
+{
+  type: 'user-invite/accept',
+  receipt: invite_id,     // the id of the invite message (which is being accepted).
+  id: guest_long_term_id, // the real identity which the guest will use now.
+  key: hash(seed),        // key used to encrypt the `reveal` field. required if reveal was present.
+                          // if the guest does not wish to reveal that info, they should ask
+                          // their host to create another invite.
+  signature: sig          // signed by guest_temp_id, to prove that guest_long_term_id held that.
+}
+```
+
+### user-invite/confirm
+
+published by a pub, when observing an invite accept message.
+it just embeds the accept_message.
+
+``` js
+{
+  type: 'user-invite/confirm',
+  embed: accept_message
+}
+```
+
+# License
 
 MIT
-
-
-
-
-
-
 
