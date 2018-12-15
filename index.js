@@ -5,6 +5,7 @@ var deepEquals = require('deep-equals')
 var crypto = require('crypto')
 var ssbKeys = require('ssb-keys')
 var ssbClient = require('ssb-client')
+var types = require('./types')
 
 function code(err, c) {
   err.code = 'user-invites:'+c
@@ -52,16 +53,16 @@ exports.init = function (sbot, config) {
     if(!acc) acc = {invited: {}, invites:{}, accepts: {}, hosts: {}}
     var msg = data.value
     var invite, accept
-    if(msg.content.type === 'user-invite') {
+    if(types.isInvite(msg)) {
       //TODO: validate that this is a msg we understand!
       invite = msg
       accept = acc.accepts[data.key]
     }
-    else if(msg.content.type === 'user-invite/accept') {
+    else if(types.isAccept(msg)) {
       accept = msg
       invite = acc.invites[accept.content.receipt]
     }
-    else if(msg.content.type === 'user-invite/confirm') {
+    else if(types.isConfirm(msg)) {
       //TODO: just for when we are the guest, but we need to make sure at least one confirm exists.
       accept = msg.content.embed
       invite = acc.invites[accept.content.receipt]
