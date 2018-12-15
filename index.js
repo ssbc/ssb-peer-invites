@@ -1,6 +1,10 @@
 var pull = require('pull-stream')
 var Reduce = require('flumeview-reduce')
 var I = require('./valid')
+var deepEquals = require('deep-equals')
+var crypto = require('crypto')
+var ssbKeys = require('ssb-keys')
+var ssbClient = require('ssb-client')
 
 function code(err, c) {
   err.code = 'user-invites:'+c
@@ -13,6 +17,10 @@ function all (stream, cb) {
 
 function isFunction (f) {
   return typeof f === 'function'
+}
+
+function isObject (o) {
+  return o && typeof o == 'object'
 }
 
 exports.name = 'user-invites'
@@ -40,7 +48,7 @@ exports.init = function (sbot, config) {
   var init = false
   var layer = sbot.friends.createLayer('user-invites')
 
-  var invites = sbot._flumeUse('user-invites', Reduce(2, function (acc, data, _seq) {
+  function reduce (acc, data, _seq) {
     if(!acc) acc = {invited: {}, invites:{}, accepts: {}, hosts: {}}
     var msg = data.value
     var invite, accept
@@ -85,7 +93,16 @@ exports.init = function (sbot, config) {
       acc.accepts[accept.receipt] = accept
 
     return acc
-  }))
+  }
+
+  var initial = {invites: {}, accepts: {}, hosts: {}}
+  var state
+  //a hack here, so that we can grab a handle on invites.value.set
+  var invites = sbot._flumeUse('user-invites', function (log, name) {
+    var _invites = Reduce(2, reduce, null, null, initial)(log, name)
+    state = _invites.value
+    return _invites
+  })
 
   invites.get(function (_, invites) {
     var g = {}
@@ -162,12 +179,12 @@ exports.init = function (sbot, config) {
 
   var accepted = {}
 
-  function getConfirm (invite_id, cb) {
-
+  function getConfirm (invite_id, accept, cb) {
     getResponse(invite_id, function (msg) {
       return (
         msg.content.type === 'user-invite/confirm' &&
-        msg.content.embed.content.receipt === invite_id
+        msg.content.embed.content.receipt === invite_id &&
+        deepEquals(msg.content.embed, accept)
       )
     }, cb)
   }
@@ -187,7 +204,7 @@ exports.init = function (sbot, config) {
   invites.confirm = function (accept, cb) {
     var invite_id = accept.content.receipt
     //check if the invite in question hasn't already been accepted.
-    getConfirm(invite_id, function (err, confirm) {
+    getConfirm(invite_id, accept, function (err, confirm) {
       if(err) return cb(err)
       if(confirm) return cb(null, confirm)
 
@@ -258,7 +275,7 @@ exports.init = function (sbot, config) {
       var seed = crypto.randomBytes(32)
       sbot.identities.publishAs({
         id: opts.id || sbot.id,
-        content: valid.createInvite(seed, opts.id || sbot.id, opts.reveal, opts.private)
+        content: I.createInvite(seed, opts.id || sbot.id, opts.reveal, opts.private)
       }, function (err, data) {
         cb(null, {
           seed: seed,
@@ -304,6 +321,7 @@ exports.init = function (sbot, config) {
       else {
         var pubs = invite.pubs
         var keys = ssbKeys.generate(null, invite.seed)
+        console.log("CF", invite)
         connectFirst(keys, pubs, function (err, rpc) {
           if(err) return cb(err)
           rpc.userInvites.getInvite(invite.invite, function (err, msg) {
@@ -314,42 +332,65 @@ exports.init = function (sbot, config) {
       }
 
       function next (msg) {
-        var inviteId = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
-        if(invite.invite !== inviteId)
+        var invite_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
+        if(invite.invite !== invite_id)
           return cb(new Error(
             'incorrect invite was returned! expected:'+invite.invite+', but got:'+inviteId
           ))
         var opened
-        try { opened = valid.verifyInvitePrivate(msg, invite.seed) }
+        try { opened = I.verifyInvitePrivate(msg, invite.seed) }
         catch (err) { return cb(err) }
-        //TODO: add msg to reduce state.
-        cb(null, opened)
+        //UPDATE REDUCE STATE.
+        // this is a wee bit naughty, because if you rebuild the index it might not have this invite
+        // (until you replicate it, but when you do the value won't change)
+        console.log("CURR REDUCE STATE", state.value)
+        state.set(reduce(state.value, {key: invite_id, value:msg}, invites.since.value))
+        cb(null, msg, opened)
       }
     })
   }
 
-  function getAccept (invite_id, cb) {
-    invites.get(function (err, state) {
-      var accept = state.accepts[invite_id]
-      if(accept) next(accept) //check confirm
-      else
-        all(sbot.links({dest: invite_id, values: true}), function (err, all) {
-          if(err) return cb(err)
-          cb(null, all.filter(function (msg) {
-            
-          }))
-        })
-    })
-  }
-
   invites.acceptInvite = function (opts, cb) {
-    var invite = opts.invite || opts
+    var invite = isObject(opts.invite) ? opts.invite : opts
+    var invite_id = invite.invite
     var id = opts.id || sbot.id
     var pubs = invite.pubs
     var keys = ssbKeys.generate(null, invite.seed)
 
     //check wether this invite is already accepted.
     //or if the acceptance has been publish, but not yet confirmed.
+    getAccept(invite_id, function (err, accept) {
+      if(accept) next(accept)
+      else {
+        invites.openInvite(invite, function (err, invite_msg, opened) {
+          sbot.identities.publishAs({
+            id: id,
+            content: I.createAccept(invite_msg, invite.seed, id)
+          }, function (err, accept) {
+            if(err) cb(err)
+            else {
+              state.set(reduce(state.value, accept, invites.since.value))
+              next(accept.value)
+            }
+          })
+        })
+      }
+    })
+
+    function next(accept) {
+      getConfirm(invite_id, accept, function (err, confirm) {
+        if(!confirm)
+          var pubs = invite.pubs
+          var keys = ssbKeys.generate(null, invite.seed)
+          connectFirst(keys, pubs, function (err, rpc) {
+            if(err) return cb(err)
+            rpc.userInvites.confirm(accept, function (err, confirm) {
+              //TODO: store confirms for us in the state.
+              cb(err, confirm)
+            })
+          })
+      })
+    }
   }
   return invites
 }
