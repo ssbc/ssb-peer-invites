@@ -29,7 +29,8 @@ exports.verifyInvitePublic = function (msg) {
   if(!ssbKeys.verifyObj(msg.content.invite, invite_key, msg.content))
     throw code(new Error('invalid invite signature'), 'invite-signature-failed')
 
-  //an ordinary message so doesn't use special hmac_key
+  //an ordinary message so doesn't use special hmac_key, unless configed to.
+  //TODO: import caps from config!!!
   if(!ssbKeys.verifyObj(msg.author, msg))
     throw code(new Error('invalid host signature'), 'host-signature-failed')
   return true
