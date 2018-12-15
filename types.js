@@ -1,6 +1,7 @@
 var ref = require('ssb-ref')
 var caps = {invite: require('./cap')}
 var ssbKeys = require('ssb-keys')
+var createIsBase64 = require('is-canonical-base64')
 
 function isObject (o) {
   return o && 'object' === typeof o
@@ -8,16 +9,19 @@ function isObject (o) {
 
 // signatures have a type (eg `.ed25519`) at the end,
 // but not gonna check it right here.
+var signature_rx = createIsBase64('', '\\.sig\\.\\w+')
+var box_rx = createIsBase64()
 
 function isSignature(b) {
-  return /^[A-Za-z0-9\/\+]+.sig.\w+$/.test(b)
+  return signature_rx.test(b)
 }
 
 function isMaybeBase64(b) {
-  return b === undefined || /^[A-Za-z0-9\/\+]+$/.test(b)
+  return b === undefined || box_rx.test(b)
 }
 
 exports.isInvite = function (msg) {
+  //return true
   return isObject(msg) && isObject(msg.content) && (
     'user-invite' === msg.content.type &&
     ref.isFeed(msg.content.host) &&
@@ -32,6 +36,7 @@ exports.isInvite = function (msg) {
 exports.isAccept = function (msg) {
   return isObject(msg) && isObject(msg.content) && (
     'user-invite/accept' === msg.content.type &&
+    msg.content.id == msg.author &&
     ref.isMsg(msg.content.receipt) &&
     isMaybeBase64(msg.content.key) &&
     // can't verify this without having the invite message.
@@ -47,4 +52,10 @@ exports.isConfirm = function (msg) {
     exports.isAccept(msg.content.embed)
   )
 }
+
+
+
+
+
+
 
