@@ -61,61 +61,34 @@ tape('create an invite', function (t) {
     var seed = invite.seed
     var invite_id = invite.invite
 
-    createClient(
-      ssbKeys.generate(null, seed),
-      {
-        remote: alice.getAddress(),
-        caps: require('ssb-config').caps,
-        manifest: {
-          userInvites: {
-            getInvite: 'async',
-            confirm: 'async'
-          }
-        }
-      },
-      function (err, _bob) {
+    //use device address, just for tests
+    invite.pubs.push(alice.getAddress('device'))
+
+    bob.userInvites.openInvite(invite, function (err, invite_msg, data) {
+      if(err) throw err
+      t.ok(invite)
+      console.log(invite_msg, invite, invite_id)
+      t.equal(toId(invite_msg), invite_id)
+      var data = I.verifyInvitePrivate(invite_msg, seed)
+      t.deepEqual(data, {reveal: undefined, private: undefined})
+      //check this invite is valid. would throw if it wasn't.
+      bob.userInvites.acceptInvite(invite, function (err, confirm) {
         if(err) throw err
-        _bob.userInvites.getInvite(invite_id, function (err, invite_msg) {
-          if(err) throw err
-          t.ok(invite)
-          t.equal(toId(invite_msg), invite_id)
-          var data = I.verifyInvitePrivate(invite_msg, seed)
-          t.deepEqual(data, {reveal: undefined, private: undefined})
-          //check this invite is valid. would throw if it wasn't.
- 
-          //bob chooses to accept this invite.
-          var accept_content = I.createAccept(invite_msg, seed, bob.id)
 
-          bob.publish(accept_content, function (err, accept) {
-            if(err) throw err
-            _bob.userInvites.confirm(accept.value, function (err, msg) {
-              if(err) throw err
-              t.ok(msg)
-          var confirm_id = toId(msg)
-              alice.get(confirm_id, function (err, _msg) {
-                if(err) throw err
-                t.deepEqual(msg, _msg)
-
-
-                //calling accept again should return the previous accept message.
-                _bob.userInvites.confirm(accept.value, function (err, msg2) {
-                  if(err) throw err
-                  t.deepEqual(msg2, msg)
-                  alice.close()
-                  bob.close()
-                  t.end()
-                })
-              })
-            })
+        //check that alice and bob both understand the other to be following them.
+        bob.friends.hops({reverse: true}, function (err, hops) {
+          t.equal(hops[alice.id], 1)
+          alice.friends.hops({reverse: true}, function (err, hops) {
+            t.equal(hops[bob.id], 1)
+            alice.close()
+            bob.close()
+            t.end()
           })
         })
-      }
-    )
+      })
+    })
   })
 })
-
-
-
 
 
 
