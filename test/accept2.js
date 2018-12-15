@@ -7,9 +7,7 @@ var createClient = require('ssb-client')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-//var explain = require('explain-error')
 var pull = require('pull-stream')
-//var u = require('../lib/util')
 var ref = require('ssb-ref')
 
 var createSbot = require('scuttlebot')
@@ -89,8 +87,4 @@ tape('create an invite', function (t) {
     })
   })
 })
-
-
-
-
 
