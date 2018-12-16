@@ -34,6 +34,11 @@ on their own feed (`type: 'user-invite/accept'`), and then pass that to the pub,
 who then publishes a confirm message (`type: user-invite/confirm'`).
 Now peers who replicate the pub's feed can see the guest has arrived.
 
+## TODO
+
+* decide on encoding. must contain: `seed, invite, pubs+`
+* test that it works on unreliable connections and end points.
+
 ## api
 
 ### userInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
