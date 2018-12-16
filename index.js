@@ -275,12 +275,14 @@ exports.init = function (sbot, config) {
     if(isFunction(opts))
       return opts(new Error ('user-invites: expected: options *must* be provided.'))
 
+    var host_id = opts.id || sbot.id
     getNearbyPubs(opts, function (err, near) {
       var seed = crypto.randomBytes(32)
       sbot.identities.publishAs({
-        id: opts.id || sbot.id,
-        content: I.createInvite(seed, opts.id || sbot.id, opts.reveal, opts.private, caps)
+        id: host_id,
+        content: I.createInvite(seed, host_id, opts.reveal, opts.private, caps)
       }, function (err, data) {
+        if(err) return cb(err)
         cb(null, {
           seed: seed,
           invite: data.key,
@@ -396,5 +398,4 @@ exports.init = function (sbot, config) {
   }
   return invites
 }
-
 
