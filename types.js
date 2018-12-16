@@ -50,7 +50,12 @@ exports.isAccept = function (msg) {
 exports.isConfirm = function (msg) {
   return isObject(msg) && isObject(msg.content) && (
     'user-invite/confirm' === msg.content.type &&
-    exports.isAccept(msg.content.embed)
+    exports.isAccept(msg.content.embed) &&
+    //second pointer back to receipt, so that links can find it
+    //(since it unfortunately does not handle links nested deeper
+    //inside objects. when we look up the message,
+    //confirm that content.embed.content.receipt is the same)
+    msg.content.embed.content.receipt === msg.content.receipt
   )
 }
 

@@ -67,12 +67,14 @@ exports.createAccept = function (msg, seed, id, caps) {
   if(keys.id != msg.content.invite)
     throw code(new Error('seed does not match invite'), 'seed-must-match-invite')
   var inviteId = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
-  return ssbKeys.signObj(keys, caps.userInvite, {
+  var content = {
     type: 'user-invite/accept',
     receipt: inviteId,
-    id: id,
-    key: msg.content.reveal ? u.hash(u.hash(seed)).toString('base64') : undefined
-  })
+    id: id
+  }
+  if(msg.content.reveal)
+    content.key = u.hash(u.hash(seed)).toString('base64')
+  return ssbKeys.signObj(keys, caps.userInvite, content)
 }
 
 exports.verifyAcceptOnly = function (accept, caps) {
@@ -115,5 +117,18 @@ exports.verifyAccept = function (accept, invite, caps) {
   //an ordinary message, so does not use hmac_key
   return reveal || true
 }
+
+exports.createConfirm =  function (accept) {
+  return {
+    type: 'user-invite/confirm',
+    embed: accept,
+    //second pointer back to receipt, so that links can find it
+    //(since it unfortunately does not handle links nested deeper
+    //inside objects. when we look up the message,
+    //confirm that content.embed.content.receipt is the same)
+    receipt: accept.content.receipt
+  }
+}
+
 
 

@@ -50,16 +50,25 @@ exports.init = function (sbot, config) {
   var layer = sbot.friends.createLayer('user-invites')
 
   var caps = config.caps || {}
+  var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
   caps.userInvite = caps.userInvite || require('./cap')
 
   function reduce (acc, data, _seq) {
-    if(!acc) acc = {invited: {}, invites:{}, accepts: {}, hosts: {}}
+    if(!acc) acc = initial
     var msg = data.value
     var invite, accept
     if(types.isInvite(msg, caps)) {
       //TODO: validate that this is a msg we understand!
       invite = msg
       accept = acc.accepts[data.key]
+
+      //remember guest ids, so that you can process pub messages.
+      //this is necessary to confirm invites here the guest failed before they received
+      //the confirmation, and do not realize they are confirmed yet. they'll try again later.
+
+      //id rather not have this here. it's gonna bloat. better a different kind of index.
+      //can fix this later though.
+      acc.guests[data.value.content.invite] = true
     }
     else if(types.isAccept(msg, caps)) {
       accept = msg
@@ -99,7 +108,6 @@ exports.init = function (sbot, config) {
     return acc
   }
 
-  var initial = {invites: {}, accepts: {}, hosts: {}}
   var state
   //a hack here, so that we can grab a handle on invites.value.set
   var invites = sbot._flumeUse('user-invites', function (log, name) {
@@ -123,16 +131,16 @@ exports.init = function (sbot, config) {
 
   sbot.auth.hook(function (fn, args) {
     var id = args[0], cb = args[1]
+    //currently a problem here where message may be confirmed,
+    //but guest didn't get the welcome yet. they need to be able to connect
+    //and request it again.
     invites.get(function (err, v) {
       if(err) return cb(err)
-      for(var k in v.invites) {
-        if(v.invites[k].content.invite === id) {
-          return cb(null, {
-            allow: ['userInvites.getInvite', 'userInvites.confirm'],
-            deny: null
-          })
-        }
-      }
+      if(v.guests[id])
+        return cb(null, {
+          allow: ['userInvites.getInvite', 'userInvites.confirm'],
+          deny: null
+        })
       fn.apply(null, args)
     })
   })
@@ -223,15 +231,7 @@ exports.init = function (sbot, config) {
         if(accepted[invite_id]) return cb(new Error('race condition: try again soon'))
 
         accepted[invite_id] = true
-        sbot.publish({
-          type: 'user-invite/confirm',
-          embed: accept,
-          //second pointer back to receipt, so that links can find it
-          //(since it unfortunately does not handle links nested deeper
-          //inside objects. when we look up the message,
-          //confirm that content.embed.content.receipt is the same)
-          receipt: accept.content.receipt
-        }, function (err, data) {
+        sbot.publish(I.createConfirm(accept), function (err, data) {
           delete accepted[invite_id]
           cb(err, data.value)
         })
