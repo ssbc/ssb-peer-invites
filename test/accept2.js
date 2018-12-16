@@ -29,17 +29,25 @@ function all(stream, cb) {
   return pull(stream, pull.collect(cb))
 }
 
+var caps = {
+  sign: crypto.randomBytes(32),//.toString('base64'),
+  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  shs: crypto.randomBytes(32),//.toString('base64'),
+}
+
 var alice = createSbot({
   temp: true,
   timeout: 1000,
   port: 12342,
   keys:ssbKeys.generate(),
+  caps: caps
 })
 var bob = createSbot({
   temp: true,
   timeout: 1000,
   port: 12343,
   keys:ssbKeys.generate(),
+  caps: caps
 })
 
 function toId(msg) {
@@ -50,7 +58,7 @@ tape('create an invite', function (t) {
 
   var seed = crypto.randomBytes(32)
 
-  var content = I.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
+//  var content = I.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
 //  alice.publish(content, function (err, msg) {
   //  I.verifyInvitePublic(msg.value)
 
@@ -65,9 +73,7 @@ tape('create an invite', function (t) {
     bob.userInvites.openInvite(invite, function (err, invite_msg, data) {
       if(err) throw err
       t.ok(invite)
-      console.log(invite_msg, invite, invite_id)
       t.equal(toId(invite_msg), invite_id)
-      var data = I.verifyInvitePrivate(invite_msg, seed)
       t.deepEqual(data, {reveal: undefined, private: undefined})
       //check this invite is valid. would throw if it wasn't.
       bob.userInvites.acceptInvite(invite, function (err, confirm) {
@@ -87,4 +93,6 @@ tape('create an invite', function (t) {
     })
   })
 })
+
+
 

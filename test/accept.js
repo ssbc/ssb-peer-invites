@@ -28,32 +28,40 @@ function all(stream, cb) {
   return pull(stream, pull.collect(cb))
 }
 
+var caps = {
+  sign: crypto.randomBytes(32),//.toString('base64'),
+  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  shs: crypto.randomBytes(32),//.toString('base64'),
+}
+
 var alice = createSbot({
   temp: true,
   timeout: 1000,
   port: 12342,
   keys:ssbKeys.generate(),
+  caps: caps
 })
 var bob = createSbot({
   temp: true,
   timeout: 1000,
   port: 12343,
   keys:ssbKeys.generate(),
+  caps: caps
 })
 
 tape('create an invite', function (t) {
 
   var seed = crypto.randomBytes(32)
 
-  var content = I.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
+  var content = I.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}, caps)
   alice.publish(content, function (err, msg) {
-    I.verifyInvitePublic(msg.value)
+    I.verifyInvitePublic(msg.value, caps)
 
     createClient(
       ssbKeys.generate(null, seed),
       {
         remote: alice.getAddress(),
-        caps: require('ssb-config').caps,
+        caps: caps,
         manifest: {
           userInvites: {
             getInvite: 'async',
@@ -68,10 +76,10 @@ tape('create an invite', function (t) {
           t.ok(invite)
           t.deepEqual(invite, msg.value)
           //check this invite is valid. would throw if it wasn't.
-          I.verifyInvitePrivate(invite, seed)
+          I.verifyInvitePrivate(invite, seed, caps)
 
           //bob chooses to accept this invite.
-          var accept_content = I.createAccept(invite, seed, bob.id)
+          var accept_content = I.createAccept(invite, seed, bob.id, caps)
 
           bob.publish(accept_content, function (err, accept) {
             if(err) throw err
@@ -100,5 +108,8 @@ tape('create an invite', function (t) {
     )
   })
 })
+
+
+
 
 

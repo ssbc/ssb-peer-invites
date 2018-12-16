@@ -3,6 +3,12 @@ var ssbKeys = require('ssb-keys')
 var v = require('ssb-validate')
 var i = require('../valid')
 var u = require('../util')
+var crypto = require('crypto')
+var caps = {
+  sign: crypto.randomBytes(32),//.toString('base64'),
+  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  shs: crypto.randomBytes(32),//.toString('base64'),
+}
 
 var invite_key = require('../cap')
 
@@ -30,20 +36,20 @@ tape('invalid - wrong invitee', function (t) {
   //construct a message where host does not match
   var seed = hash('seed2')
   var keys = ssbKeys.generate(null, seed)
-  var invalid = ssbKeys.signObj(keys, invite_key, {
+  var invalid = ssbKeys.signObj(keys, caps.userInvite, {
     type: 'user-invite',
     invite: ssbKeys.generate(null, hash('seed3')),
     host: alice.id
   })
 
-  var msg = v.create(null, alice, null, invalid, new Date('2018-03-26T06:14:18.377Z'))
+  var msg = v.create(null, alice, caps.sign, invalid, new Date('2018-03-26T06:14:18.377Z'))
 
   throws(t, function () {
-    i.verifyInvitePublic(msg)
+    i.verifyInvitePublic(msg, caps)
   }, 'user-invites:invite-signature-failed')
 
   throws(t, function () {
-    i.verifyInvitePrivate(msg)
+    i.verifyInvitePrivate(msg, seed, caps)
   }, 'user-invites:invite-signature-failed')
 
   t.end()
@@ -56,32 +62,32 @@ tape('invalid - wrong invitee', function (t) {
   var seed = hash('seed2')
   var keys = ssbKeys.generate(null, seed)
   var wrong_seed = hash('wrong_seed')
-  var invalid = ssbKeys.signObj(keys, invite_key, {
+  var invalid = ssbKeys.signObj(keys, caps.userInvite, {
     type: 'user-invite',
     invite: keys.id, //correct key
     reveal: u.box({hidden: true}, u.hash(u.hash(wrong_seed))),
     host: alice.id
   })
-  var invite_msg = v.create(null, alice, null, invalid, new Date('2018-03-26T06:14:18.377Z'))
+  var invite_msg = v.create(null, alice, caps.sign, invalid, new Date('2018-03-26T06:14:18.377Z'))
 
-  t.ok(i.verifyInvitePublic(invite_msg))
+  t.ok(i.verifyInvitePublic(invite_msg, caps))
 
   throws(t, function () {
-    i.verifyInvitePrivate(invite_msg, seed)
+    i.verifyInvitePrivate(invite_msg, seed, caps)
   }, 'user-invites:decrypt-reveal-failed')
 
   //say if the invitee creates a accept message anyway.
 
   throws(t, function () {
-    i.createAccept(invite_msg, wrong_seed, bob.id)
+    i.createAccept(invite_msg, wrong_seed, bob.id, caps)
   }, 'user-invites:seed-must-match-invite')
 
 
   throws(t, function () {
-    i.createAccept(invite_msg, seed, bob.id)
+    i.createAccept(invite_msg, seed, bob.id, caps)
   }, 'user-invites:decrypt-reveal-failed')
 
-  var accept = ssbKeys.signObj(ssbKeys.generate(null, seed), invite_key, {
+  var accept = ssbKeys.signObj(ssbKeys.generate(null, seed), caps.userInvite, {
     type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite_msg, null, 2)),
     id: bob.id,
@@ -89,13 +95,13 @@ tape('invalid - wrong invitee', function (t) {
   })
 
   var accept_msg =
-    v.create(null, bob, null, accept, new Date('2018-03-26T06:14:18.377Z'))
+    v.create(null, bob, caps.sign, accept, new Date('2018-03-26T06:14:18.377Z'))
 
   throws(t, function () {
-    i.verifyAccept(accept_msg, invite_msg)
+    i.verifyAccept(accept_msg, invite_msg, caps)
   }, 'user-invites:decrypt-accept-reveal-failed')
 
-  var accept2 = ssbKeys.signObj(ssbKeys.generate(null, seed), invite_key, {
+  var accept2 = ssbKeys.signObj(ssbKeys.generate(null, seed), caps.userInvite, {
     type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite_msg, null, 2)),
     id: bob.id,
@@ -103,7 +109,7 @@ tape('invalid - wrong invitee', function (t) {
   })
 
   throws(t, function () {
-    i.verifyAccept(accept_msg, invite_msg)
+    i.verifyAccept(accept_msg, invite_msg, caps)
   }, 'user-invites:decrypt-accept-reveal-failed')
 
   t.end()
@@ -112,23 +118,23 @@ tape('invalid - wrong invitee', function (t) {
 tape('wrong invite',  function (t) {
   var seed = hash('seed1')
 
-  var invite1 = v.create(null, alice, null, i.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}), new Date('2018-03-14T06:14:18.377Z'))
+  var invite1 = v.create(null, alice, caps.sign, i.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}, caps), new Date('2018-03-14T06:14:18.377Z'))
 
   t.deepEqual({
     reveal: {name: 'bob'},
     private: {text: 'welcome to ssb!'}
-  }, i.verifyInvitePrivate(invite1, seed))
+  }, i.verifyInvitePrivate(invite1, seed, caps))
 
 
-  var accept_content = i.createAccept(invite1, seed, bob.id)
-  var accept = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var accept_content = i.createAccept(invite1, seed, bob.id, caps)
+  var accept = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
   var seed2 = hash('seed2')
-  var invite2 = v.create(null, alice, null, i.createInvite(seed2, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}), new Date('2018-03-14T06:14:18.377Z'))
+  var invite2 = v.create(null, alice, caps.sign, i.createInvite(seed2, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}, caps), new Date('2018-03-14T06:14:18.377Z'))
 
   //just test we do not verify the incorrect invite
   throws(t, function () {
-    i.verifyAccept(accept, invite2)
+    i.verifyAccept(accept, invite2, caps)
   }, 'user-invites:accept-wrong-invite')
 
   t.end()
@@ -138,19 +144,19 @@ tape('wrong invite',  function (t) {
 tape('wrong invite',  function (t) {
   var seed = hash('seed1')
 
-  var invite = v.create(null, alice, null, i.createInvite(seed, alice.id), new Date('2018-03-14T06:14:18.377Z'))
+  var invite = v.create(null, alice, caps.sign, i.createInvite(seed, alice.id, null, null, caps), new Date('2018-03-14T06:14:18.377Z'))
   var seed2 = hash('seed2')
-  var accept_content = ssbKeys.signObj(ssbKeys.generate(null, seed2), invite_key, {
+  var accept_content = ssbKeys.signObj(ssbKeys.generate(null, seed2), caps.userInvite, {
     type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite, null, 2)),
     id: bob.id,
   })
-  var accept2 = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var accept2 = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
 
   //just test we do not verify the incorrect invite
   throws(t, function () {
-    i.verifyAccept(accept2, invite)
+    i.verifyAccept(accept2, invite, caps)
   }, 'user-invites:accept-invite-signature-failed')
 
   t.end()
@@ -160,22 +166,23 @@ tape('wrong invite',  function (t) {
 tape('wrong invite',  function (t) {
   var seed = hash('seed1')
 
-  var invite = v.create(null, alice, null, i.createInvite(seed, alice.id, 'REVEAL'), new Date('2018-03-14T06:14:18.377Z'))
-  var accept_content = ssbKeys.signObj(ssbKeys.generate(null, seed), invite_key, {
+  var invite = v.create(null, alice, caps.sign, i.createInvite(seed, alice.id, 'REVEAL', null, caps), new Date('2018-03-14T06:14:18.377Z'))
+  var accept_content = ssbKeys.signObj(ssbKeys.generate(null, seed), caps.userInvite, {
     type: 'user-invite/accept',
     receipt: '%'+ssbKeys.hash(JSON.stringify(invite, null, 2)),
     id: bob.id,
     //key is missing!
   })
-  var accept2 = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var accept2 = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
 
   //just test we do not verify the incorrect invite
   throws(t, function () {
-    i.verifyAccept(accept2, invite)
+    i.verifyAccept(accept2, invite, caps)
   }, 'user-invites:accept-must-reveal-key')
 
   t.end()
 })
+
 
 

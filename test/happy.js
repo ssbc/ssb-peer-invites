@@ -4,6 +4,7 @@ var ssbKeys = require('ssb-keys')
 var v = require('ssb-validate')
 var i = require('../valid')
 var u = require('../util')
+var crypto = require('crypto')
 
 var invite_key = require('../cap')
 
@@ -12,28 +13,34 @@ var hash = u.hash
 var alice = ssbKeys.generate(null, hash('ALICE'))
 var bob = ssbKeys.generate(null, hash('BOB'))
 
+var caps = {
+  sign: crypto.randomBytes(32),//.toString('base64'),
+  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  shs: crypto.randomBytes(32),//.toString('base64'),
+}
+
 tape('happy', function (t) {
 
   var seed = hash('seed1')
 
   var tmp = ssbKeys.generate(null, seed)
 
-  var invite_content = i.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
+  var invite_content = i.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}, caps)
 
-  var msg = v.create(null, alice, null, invite_content, new Date('2018-03-14T06:14:18.377Z'))
+  var msg = v.create(null, alice, caps.sign, invite_content, new Date('2018-03-14T06:14:18.377Z'))
 
-  var message = i.verifyInvitePrivate(msg, seed)
+  var message = i.verifyInvitePrivate(msg, seed, caps)
 
   t.deepEqual({
     reveal: {name: 'bob'},
     private: {text: 'welcome to ssb!'}
   }, message)
 
-  var accept_content = i.createAccept(msg, seed, bob.id)
+  var accept_content = i.createAccept(msg, seed, bob.id, caps)
 
-  var msg2 = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var msg2 = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
-  var revealed = i.verifyAccept(msg2, msg)
+  var revealed = i.verifyAccept(msg2, msg, caps)
 
   t.deepEqual(revealed, {name: 'bob'})
 
@@ -46,22 +53,22 @@ tape('happy 2, without private', function (t) {
 
   var tmp = ssbKeys.generate(null, seed)
 
-  var invite_content = i.createInvite(seed, alice.id, {name: 'bob'}, null)
+  var invite_content = i.createInvite(seed, alice.id, {name: 'bob'}, null, caps)
 
-  var msg = v.create(null, alice, null, invite_content, new Date('2018-03-14T06:14:18.377Z'))
+  var msg = v.create(null, alice, caps.sign, invite_content, new Date('2018-03-14T06:14:18.377Z'))
 
-  var message = i.verifyInvitePrivate(msg, seed)
+  var message = i.verifyInvitePrivate(msg, seed, caps)
 
   t.deepEqual({
     reveal: {name: 'bob'},
     private: undefined
   }, message)
 
-  var accept_content = i.createAccept(msg, seed, bob.id)
+  var accept_content = i.createAccept(msg, seed, bob.id, caps)
 
-  var msg2 = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var msg2 = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
-  var revealed = i.verifyAccept(msg2, msg)
+  var revealed = i.verifyAccept(msg2, msg, caps)
 
   t.deepEqual(revealed, {name: 'bob'})
 
@@ -76,22 +83,22 @@ tape('happy 3, without reveal', function (t) {
 
   var tmp = ssbKeys.generate(null, seed)
 
-  var invite_content = i.createInvite(seed, alice.id, null, {name: 'bob'})
+  var invite_content = i.createInvite(seed, alice.id, null, {name: 'bob'}, caps)
 
-  var msg = v.create(null, alice, null, invite_content, new Date('2018-03-14T06:14:18.377Z'))
+  var msg = v.create(null, alice, caps.sign, invite_content, new Date('2018-03-14T06:14:18.377Z'))
 
-  var message = i.verifyInvitePrivate(msg, seed)
+  var message = i.verifyInvitePrivate(msg, seed, caps)
 
   t.deepEqual({
     reveal: undefined,
     private: {name: 'bob'}
   }, message)
 
-  var accept_content = i.createAccept(msg, seed, bob.id)
+  var accept_content = i.createAccept(msg, seed, bob.id, caps)
 
-  var msg2 = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var msg2 = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
-  var revealed = i.verifyAccept(msg2, msg)
+  var revealed = i.verifyAccept(msg2, msg, caps)
 
   t.equal(revealed, true)
 
@@ -105,22 +112,22 @@ tape('happy 4, neither private or reveal', function (t) {
 
   var tmp = ssbKeys.generate(null, seed)
 
-  var invite_content = i.createInvite(seed, alice.id)
+  var invite_content = i.createInvite(seed, alice.id, null, null, caps)
 
-  var msg = v.create(null, alice, null, invite_content, new Date('2018-03-14T06:14:18.377Z'))
+  var msg = v.create(null, alice, caps.sign, invite_content, new Date('2018-03-14T06:14:18.377Z'))
 
-  var message = i.verifyInvitePrivate(msg, seed)
+  var message = i.verifyInvitePrivate(msg, seed, caps)
 
   t.deepEqual({
     reveal: undefined,
     private: undefined
   }, message)
 
-  var accept_content = i.createAccept(msg, seed, bob.id)
+  var accept_content = i.createAccept(msg, seed, bob.id, caps)
 
-  var msg2 = v.create(null, bob, null, accept_content, new Date('2018-03-14T06:32:18.377Z'))
+  var msg2 = v.create(null, bob, caps.sign, accept_content, new Date('2018-03-14T06:32:18.377Z'))
 
-  var revealed = i.verifyAccept(msg2, msg)
+  var revealed = i.verifyAccept(msg2, msg, caps)
 
   t.equal(revealed, true)
 
@@ -130,10 +137,11 @@ tape('happy 4, neither private or reveal', function (t) {
 tape('safety', function (t) {
   t.throws(function () {
     //do now give away your own private key!
-    i.createInvite(hash("ALICE"), alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
+    i.createInvite(hash("ALICE"), alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}, caps)
   })
   t.end()
 })
+
 
 
 
