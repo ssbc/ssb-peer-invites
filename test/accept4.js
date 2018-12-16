@@ -1,5 +1,3 @@
-//WARNING: this test currently only passes
-//if the computer has a network.
 var crypto = require('crypto')
 var I = require('../valid')
 var createClient = require('ssb-client')
@@ -7,7 +5,9 @@ var createClient = require('ssb-client')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
+//var explain = require('explain-error')
 var pull = require('pull-stream')
+//var u = require('../lib/util')
 var ref = require('ssb-ref')
 
 var createSbot = require('scuttlebot')
@@ -24,7 +24,6 @@ var createSbot = require('scuttlebot')
   .use(require('ssb-identities'))
   .use(require('ssb-friends'))
   .use(require('../'))
-
 
 function toId(msg) {
   return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
@@ -54,38 +53,36 @@ var bob = createSbot({
   keys:ssbKeys.generate(),
   caps: caps
 })
-var carol = ssbKeys.generate()
 
 tape('create an invite', function (t) {
 
-  var seed = crypto.randomBytes(32)
-
-  //in this test, we use a separate identity to create the invite,
-  //to test multiple identity support, and also simulate confirmation by pub.
-  alice.identities.create(function (err, carol_id) {
+  alice.userInvites.create({}, function (err, invite) {
     if(err) throw err
-    alice.userInvites.create({id: carol_id}, function (err, invite) {
+    var seed = invite.seed
+    var invite_id = invite.invite
+
+    //use device address, just for tests
+    invite.pubs.push(alice.getAddress('device'))
+
+    bob.userInvites.openInvite(invite, function (err, invite_msg, data) {
       if(err) throw err
-      var seed = invite.seed
-      var invite_id = invite.invite
+      t.ok(invite)
+      t.equal(toId(invite_msg), invite_id)
+      t.deepEqual(data, {reveal: undefined, private: undefined})
 
-      //use device address, just for tests
-      invite.pubs.push(alice.getAddress('device'))
-
-      bob.userInvites.openInvite(invite, function (err, invite_msg, data) {
+      //bob publishes accept_content manually. simulates that he crashed
+      //before causing confirm.
+      var accept_content = I.createAccept(invite_msg, seed, bob.id, caps)
+      bob.publish(accept_content, function (err, accept) {
         if(err) throw err
-        t.ok(invite)
-        t.equal(invite_msg.author, carol_id)
-        t.equal(toId(invite_msg), invite_id)
-        t.deepEqual(data, {reveal: undefined, private: undefined})
-        //check this invite is valid. would throw if it wasn't.
+
         bob.userInvites.acceptInvite(invite, function (err, confirm) {
           if(err) throw err
-          t.equal(confirm.author, alice.id)
+
           //check that alice and bob both understand the other to be following them.
           bob.friends.hops({reverse: true}, function (err, hops) {
-            t.equal(hops[carol_id], 1)
-            alice.friends.hops({reverse: true, start: carol_id}, function (err, hops) {
+            t.equal(hops[alice.id], 1)
+            alice.friends.hops({reverse: true}, function (err, hops) {
               t.equal(hops[bob.id], 1)
               alice.close()
               bob.close()
@@ -97,5 +94,14 @@ tape('create an invite', function (t) {
     })
   })
 })
+
+
+
+
+
+
+
+
+
 
 
