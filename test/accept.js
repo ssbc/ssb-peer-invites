@@ -1,5 +1,3 @@
-//WARNING: this test currently only passes
-//if the computer has a network.
 var crypto = require('crypto')
 var I = require('../valid')
 var createClient = require('ssb-client')
@@ -60,7 +58,7 @@ tape('create an invite', function (t) {
     createClient(
       ssbKeys.generate(null, seed),
       {
-        remote: alice.getAddress(),
+        remote: alice.getAddress('device') || alice.getAddress('device'),
         caps: caps,
         manifest: {
           userInvites: {
@@ -108,7 +106,6 @@ tape('create an invite', function (t) {
     )
   })
 })
-
 
 
 
