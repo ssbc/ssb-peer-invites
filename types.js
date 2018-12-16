@@ -20,7 +20,8 @@ function isMaybeBase64(b) {
   return b === undefined || box_rx.test(b)
 }
 
-exports.isInvite = function (msg) {
+exports.isInvite = function (msg, caps) {
+  if(!isObject(caps)) throw new Error('caps must be provided')
   //return true
   return isObject(msg) && isObject(msg.content) && (
     'user-invite' === msg.content.type &&
@@ -29,7 +30,7 @@ exports.isInvite = function (msg) {
     isMaybeBase64(msg.content.reveal) &&
     isMaybeBase64(msg.content.public) &&
     // signature must be valid !!!
-    ssbKeys.verifyObj(msg.content.invite, caps.invite, msg.content)
+    ssbKeys.verifyObj(msg.content.invite, caps.userInvite, msg.content)
   )
 }
 
@@ -52,10 +53,6 @@ exports.isConfirm = function (msg) {
     exports.isAccept(msg.content.embed)
   )
 }
-
-
-
-
 
 
 

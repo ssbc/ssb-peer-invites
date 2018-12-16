@@ -6,5 +6,5 @@ function hash(s) {
   )
 }
 
-module.exports =  hash("user-invites:DEVELOPMENT")
+module.exports =  hash("user-invites:DEVELOPMENT") //XXX DON'T publish without fixing this!
 

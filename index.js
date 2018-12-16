@@ -49,20 +49,23 @@ exports.init = function (sbot, config) {
   var init = false
   var layer = sbot.friends.createLayer('user-invites')
 
+  var caps = config.caps || {}
+  caps.userInvite = caps.userInvite || require('./cap')
+
   function reduce (acc, data, _seq) {
     if(!acc) acc = {invited: {}, invites:{}, accepts: {}, hosts: {}}
     var msg = data.value
     var invite, accept
-    if(types.isInvite(msg)) {
+    if(types.isInvite(msg, caps)) {
       //TODO: validate that this is a msg we understand!
       invite = msg
       accept = acc.accepts[data.key]
     }
-    else if(types.isAccept(msg)) {
+    else if(types.isAccept(msg, caps)) {
       accept = msg
       invite = acc.invites[accept.content.receipt]
     }
-    else if(types.isConfirm(msg)) {
+    else if(types.isConfirm(msg, caps)) {
       //TODO: just for when we are the guest, but we need to make sure at least one confirm exists.
       accept = msg.content.embed
       invite = acc.invites[accept.content.receipt]
@@ -72,7 +75,7 @@ exports.init = function (sbot, config) {
       if(invite === true)
         return acc
       var invite_id = accept.content.receipt
-      try { I.verifyAccept(accept, invite) }
+      try { I.verifyAccept(accept, invite, caps) }
       catch (err) { return acc }
       //fall through from not throwing
 
@@ -211,7 +214,7 @@ exports.init = function (sbot, config) {
 
       sbot.get(invite_id, function (err, invite) {
         try {
-          I.verifyAccept(accept, invite)
+          I.verifyAccept(accept, invite, caps)
         } catch (err) {
           return cb(err)
         }
@@ -276,7 +279,7 @@ exports.init = function (sbot, config) {
       var seed = crypto.randomBytes(32)
       sbot.identities.publishAs({
         id: opts.id || sbot.id,
-        content: I.createInvite(seed, opts.id || sbot.id, opts.reveal, opts.private)
+        content: I.createInvite(seed, opts.id || sbot.id, opts.reveal, opts.private, caps)
       }, function (err, data) {
         cb(null, {
           seed: seed,
@@ -294,7 +297,7 @@ exports.init = function (sbot, config) {
       n++
       ssbClient(keys, {
         remote: addr,
-        caps: require('ssb-config').caps,
+        caps: caps,
         manifest: {
           userInvites: {
             getInvite: 'async',
@@ -322,7 +325,6 @@ exports.init = function (sbot, config) {
       else {
         var pubs = invite.pubs
         var keys = ssbKeys.generate(null, invite.seed)
-        console.log("CF", invite)
         connectFirst(keys, pubs, function (err, rpc) {
           if(err) return cb(err)
           rpc.userInvites.getInvite(invite.invite, function (err, msg) {
@@ -339,12 +341,11 @@ exports.init = function (sbot, config) {
             'incorrect invite was returned! expected:'+invite.invite+', but got:'+inviteId
           ))
         var opened
-        try { opened = I.verifyInvitePrivate(msg, invite.seed) }
+        try { opened = I.verifyInvitePrivate(msg, invite.seed, caps) }
         catch (err) { return cb(err) }
         //UPDATE REDUCE STATE.
         // this is a wee bit naughty, because if you rebuild the index it might not have this invite
         // (until you replicate it, but when you do the value won't change)
-        console.log("CURR REDUCE STATE", state.value)
         state.set(reduce(state.value, {key: invite_id, value:msg}, invites.since.value))
         cb(null, msg, opened)
       }
@@ -366,7 +367,7 @@ exports.init = function (sbot, config) {
         invites.openInvite(invite, function (err, invite_msg, opened) {
           sbot.identities.publishAs({
             id: id,
-            content: I.createAccept(invite_msg, invite.seed, id)
+            content: I.createAccept(invite_msg, invite.seed, id, caps)
           }, function (err, accept) {
             if(err) cb(err)
             else {
@@ -395,4 +396,5 @@ exports.init = function (sbot, config) {
   }
   return invites
 }
+
 

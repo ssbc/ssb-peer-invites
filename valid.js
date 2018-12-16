@@ -9,11 +9,17 @@ function code(err, c) {
   return err
 }
 
-exports.createInvite = function (seed, host, reveal, private) {
+function isObject (o) {
+  return o && 'object' === typeof o
+}
+
+exports.createInvite = function (seed, host, reveal, private, caps) {
+  if(!isObject(caps)) throw new Error('caps *must* be provided')
+
   var keys = ssbKeys.generate(null, seed) //K
   if(keys.id === host)
     throw code(new Error('do not create invite with own public key'), 'user-invites:no-own-goal')
-  return ssbKeys.signObj(keys, invite_key, {
+  return ssbKeys.signObj(keys, caps.userInvite, {
     type: 'user-invite',
     invite: keys.id,
     host: host, //sign our own key, to prove we created K
@@ -22,22 +28,25 @@ exports.createInvite = function (seed, host, reveal, private) {
   })
 }
 
-exports.verifyInvitePublic = function (msg) {
+exports.verifyInvitePublic = function (msg, caps) {
+  if(!isObject(caps)) throw new Error('caps *must* be provided')
+
   if(msg.content.host != msg.author)
     throw code(new Error('host did not match author'), 'host-must-match-author')
 
-  if(!ssbKeys.verifyObj(msg.content.invite, invite_key, msg.content))
+  if(!ssbKeys.verifyObj(msg.content.invite, caps.userInvite, msg.content))
     throw code(new Error('invalid invite signature'), 'invite-signature-failed')
 
   //an ordinary message so doesn't use special hmac_key, unless configed to.
-  //TODO: import caps from config!!!
-  if(!ssbKeys.verifyObj(msg.author, msg))
+  if(!ssbKeys.verifyObj(msg.author, caps.sign, msg))
     throw code(new Error('invalid host signature'), 'host-signature-failed')
   return true
 }
 
-exports.verifyInvitePrivate = function (msg, seed) {
-  exports.verifyInvitePublic(msg)
+exports.verifyInvitePrivate = function (msg, seed, caps) {
+  if(!isObject(caps)) throw new Error('caps *must* be provided')
+
+  exports.verifyInvitePublic(msg, caps)
   if(msg.content.reveal) {
     var reveal = u.unbox(msg.content.reveal, u.hash(u.hash(seed)))
     if(!reveal) throw code(new Error('could not decrypt reveal field'), 'decrypt-reveal-failed')
@@ -50,13 +59,15 @@ exports.verifyInvitePrivate = function (msg, seed) {
   return {reveal: reveal, private: private}
 }
 
-exports.createAccept = function (msg, seed, id) {
-  exports.verifyInvitePrivate(msg, seed)
+exports.createAccept = function (msg, seed, id, caps) {
+  if(!isObject(caps)) throw new Error('caps *must* be provided')
+
+  exports.verifyInvitePrivate(msg, seed, caps)
   var keys = ssbKeys.generate(null, seed) //K
   if(keys.id != msg.content.invite)
     throw code(new Error('seed does not match invite'), 'seed-must-match-invite')
   var inviteId = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
-  return ssbKeys.signObj(keys, invite_key, {
+  return ssbKeys.signObj(keys, caps.userInvite, {
     type: 'user-invite/accept',
     receipt: inviteId,
     id: id,
@@ -64,19 +75,22 @@ exports.createAccept = function (msg, seed, id) {
   })
 }
 
-exports.verifyAcceptOnly = function (accept) {
+exports.verifyAcceptOnly = function (accept, caps) {
+  if(!isObject(caps)) throw new Error('caps *must* be provided')
   if(accept.content.type !== 'user-invite/accept')
     throw code(new Error('accept must be type: "user-invite/accept", was:'+JSON.stringify(accept.content.type)), 'accept-message-type')
   if(!isMsg(accept.content.receipt))
     throw code(new Error('accept must reference invite message id'), 'accept-reference-invite')
-  if(!ssbKeys.verifyObj(accept.content.id, accept))
+  //verify signed as ordinary message.
+  if(!ssbKeys.verifyObj(accept.content.id, caps.sign, accept))
     throw code(new Error('acceptance must be signed by claimed key'), 'accept-signature-failed')
 }
 
-exports.verifyAccept = function (accept, invite) {
+exports.verifyAccept = function (accept, invite, caps) {
+  if(!isObject(caps)) throw new Error('caps *must* be provided')
   if(!invite) throw new Error('invite must be provided')
 
-  exports.verifyAcceptOnly(accept)
+  exports.verifyAcceptOnly(accept, caps)
 
   if(invite.content.type !== 'user-invite')
     throw code(new Error('accept must be type: invite, was:'+accept.content.type), 'user-invites:invite-message-type')
@@ -96,9 +110,10 @@ exports.verifyAccept = function (accept, invite) {
     if(!reveal) throw code(new Error('accept did not correctly reveal invite'), 'decrypt-accept-reveal-failed')
   }
 
-  if(!ssbKeys.verifyObj(invite.content.invite, invite_key, accept.content))
+  if(!ssbKeys.verifyObj(invite.content.invite, caps.userInvite, accept.content))
     throw code(new Error('did not verify invite-acceptance contents'), 'accept-invite-signature-failed')
   //an ordinary message, so does not use hmac_key
   return reveal || true
 }
+
 
