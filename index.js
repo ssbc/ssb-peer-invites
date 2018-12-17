@@ -111,7 +111,7 @@ exports.init = function (sbot, config) {
   var state
   //a hack here, so that we can grab a handle on invites.value.set
   var invites = sbot._flumeUse('user-invites', function (log, name) {
-    var _invites = Reduce(2, reduce, null, null, initial)(log, name)
+    var _invites = Reduce(3, reduce, null, null, initial)(log, name)
     state = _invites.value
     return _invites
   })
@@ -398,4 +398,6 @@ exports.init = function (sbot, config) {
   }
   return invites
 }
+
+
 
