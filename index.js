@@ -1,11 +1,13 @@
-var pull = require('pull-stream')
-var Reduce = require('flumeview-reduce')
-var I = require('./valid')
+var pull       = require('pull-stream')
+var Reduce     = require('flumeview-reduce')
+var I          = require('./valid')
 var deepEquals = require('deep-equals')
-var crypto = require('crypto')
-var ssbKeys = require('ssb-keys')
-var ssbClient = require('ssb-client')
-var types = require('./types')
+var types      = require('./types')
+var paramap    = require('pull-paramap')
+var ssbClient  = require('ssb-client')
+var crypto     = require('crypto')
+var ssbKeys    = require('ssb-keys')
+
 
 function code(err, c) {
   err.code = 'user-invites:'+c
@@ -30,11 +32,12 @@ exports.version = '1.0.0'
 exports.manifest = {
   getInvite: 'async',
   confirm: 'async',
-  create: 'async'
+  create: 'async',
+  willReplicate: 'async'
 }
 
 exports.permissions = {
-//  master: {allow: ['create']}
+  anonymous: {allow: ['willReplicate']},
 }
 
 // KNOWN BUG: it's possible to accept an invite more than once,
@@ -50,8 +53,8 @@ exports.init = function (sbot, config) {
   var layer = sbot.friends.createLayer('user-invites')
 
   var caps = config.caps || {}
-  var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
   caps.userInvite = caps.userInvite || require('./cap')
+  var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
 
   function reduce (acc, data, _seq) {
     if(!acc) acc = initial
@@ -201,17 +204,6 @@ exports.init = function (sbot, config) {
     }, cb)
   }
 
-
-  function getAccept (invite_id, cb) {
-    getResponse(invite_id, function (msg) {
-      return (
-        msg.content.type === 'user-invite/accept' &&
-        msg.content.receipt === invite_id
-      )
-    }, cb)
-  }
-
-
   //used to request that a server confirms your acceptance.
   invites.confirm = function (accept, cb) {
     var invite_id = accept.content.receipt
@@ -237,6 +229,31 @@ exports.init = function (sbot, config) {
         })
       })
     })
+  }
+
+
+  //if the caller is someone we know, let them know wether
+  //we are willing to confirm (and replicate) their guest.
+  invites.willReplicate = function (opts, cb) {
+    if(isFunction(opts)) cb = opts, opts = {}
+    var id = this.id //id of caller
+    var max = config.friends && config.friends.hops || config.replicate && config.replicate.hops || 3
+    sbot.friends.hops({}, function (err, hops) {
+      // compare hops of caller (host to be) with max - 1
+      // because that means that the hops of the guest
+      // will be in range.
+      if(hops[id] <= (max - 1)) cb(null,  true)
+      else cb(null, false)
+    })
+  }
+
+  function getAccept (invite_id, cb) {
+    getResponse(invite_id, function (msg) {
+      return (
+        msg.content.type === 'user-invite/accept' &&
+        msg.content.receipt === invite_id
+      )
+    }, cb)
   }
 
   //retrive pubs who might be willing to confirm your invite. (used when creating an invte)
@@ -266,7 +283,24 @@ exports.init = function (sbot, config) {
             b.availability - a.availability
           )
         })
-        cb(null, near)
+
+        if(opts.offline) return cb(null, near)
+
+        pull(
+          pull.values(near),
+          paramap(function (pub, cb) {
+            sbot.connect(pub.address, function (err, rpc) {
+              rpc.userInvites.willReplicate({}, function (err, v) {
+                //pass through input if true, else (err or false)
+                //then drop.
+                cb(null, v && pub)
+              })
+            })
+          },3),
+          pull.filter(Boolean),
+          pull.take(3),
+          pull.collect(cb)
+        )
       })
     })
   }
@@ -297,6 +331,8 @@ exports.init = function (sbot, config) {
     var n = 0, err
     pubs.forEach(function (addr) {
       n++
+      //don't use sbot.connect here, because we are connecting
+      //with a different cap.
       ssbClient(keys, {
         remote: addr,
         caps: caps,
@@ -396,8 +432,10 @@ exports.init = function (sbot, config) {
       })
     }
   }
+
   return invites
 }
+
 
 
 
