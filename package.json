@@ -11,6 +11,8 @@
     "deep-equals": "0.0.2",
     "flumeview-reduce": "^1.3.12",
     "is-canonical-base64": "^1.1.1",
+    "pull-paramap": "^1.2.2",
+    "pull-stream": "^3.6.9",
     "ssb-keys": "^7.0.14",
     "ssb-ref": "^2.9.1"
   },
