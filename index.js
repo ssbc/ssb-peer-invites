@@ -26,6 +26,10 @@ function isObject (o) {
   return o && typeof o == 'object'
 }
 
+function toBuffer(b) {
+  return Buffer.isBuffer(b) ? b : Buffer.from(b, 'base64')
+}
+
 exports.name = 'user-invites'
 
 exports.version = '1.0.0'
@@ -311,7 +315,7 @@ exports.init = function (sbot, config) {
 
     var host_id = opts.id || sbot.id
     getNearbyPubs(opts, function (err, near) {
-      var seed = crypto.randomBytes(32)
+      var seed = crypto.randomBytes(32).toString('base64')
       sbot.identities.publishAs({
         id: host_id,
         content: I.createInvite(seed, host_id, opts.reveal, opts.private, caps)
@@ -329,7 +333,7 @@ exports.init = function (sbot, config) {
   //try each of an array of addresses, and cb the first one that works.
   function connectFirst (invite, cb) {
     var n = 0, err
-    var keys = ssbKeys.generate(null, invite.seed)
+    var keys = ssbKeys.generate(null, toBuffer(invite.seed))
     invite.pubs.forEach(function (addr) {
       n++
       //don't use sbot.connect here, because we are connecting
@@ -393,7 +397,7 @@ exports.init = function (sbot, config) {
     var invite_id = invite.invite
     var id = opts.id || sbot.id
     var pubs = invite.pubs
-    var keys = ssbKeys.generate(null, invite.seed)
+    var keys = ssbKeys.generate(null, toBuffer(invite.seed))
 
     //check wether this invite is already accepted.
     //or if the acceptance has been publish, but not yet confirmed.
