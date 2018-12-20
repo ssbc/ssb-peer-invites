@@ -327,15 +327,16 @@ exports.init = function (sbot, config) {
   }
 
   //try each of an array of addresses, and cb the first one that works.
-  function connectFirst (keys, pubs, cb) {
+  function connectFirst (invite, cb) {
     var n = 0, err
-    pubs.forEach(function (addr) {
+    var keys = ssbKeys.generate(null, invite.seed)
+    invite.pubs.forEach(function (addr) {
       n++
       //don't use sbot.connect here, because we are connecting
       //with a different cap.
       ssbClient(keys, {
         remote: addr,
-        caps: caps,
+        caps: {shs: invite.cap || caps.shs},
         manifest: {
           userInvites: {
             getInvite: 'async',
@@ -360,17 +361,14 @@ exports.init = function (sbot, config) {
     invites.getInvite(invite.invite, function (err, msg) {
       if(msg)
         next(msg)
-      else {
-        var pubs = invite.pubs
-        var keys = ssbKeys.generate(null, invite.seed)
-        connectFirst(keys, pubs, function (err, rpc) {
+      else
+        connectFirst(invite, function (err, rpc) {
           if(err) return cb(err)
           rpc.userInvites.getInvite(invite.invite, function (err, msg) {
             if(err) return cb(err)
             next(msg)
           })
         })
-      }
 
       function next (msg) {
         var invite_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
@@ -420,9 +418,7 @@ exports.init = function (sbot, config) {
     function next(accept) {
       getConfirm(invite_id, accept, function (err, confirm) {
         if(!confirm)
-          var pubs = invite.pubs
-          var keys = ssbKeys.generate(null, invite.seed)
-          connectFirst(keys, pubs, function (err, rpc) {
+          connectFirst(invite, function (err, rpc) {
             if(err) return cb(err)
             rpc.userInvites.confirm(accept, function (err, confirm) {
               //TODO: store confirms for us in the state.
@@ -435,7 +431,5 @@ exports.init = function (sbot, config) {
 
   return invites
 }
-
-
 
 
