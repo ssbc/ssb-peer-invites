@@ -22,6 +22,19 @@ function toMsgId(msg) {
   return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
 }
 
+//derive key for private field
+function hash (seed) {
+  if(!Buffer.isBuffer(seed)) throw new Error('expected seed as buffer')
+  return u.hash(seed)
+}
+
+//derive key for reveal field
+function hash2 (seed) {
+  if(!Buffer.isBuffer(seed)) throw new Error('expected seed as buffer')
+  return u.hash(u.hash(seed))
+}
+
+
 exports.createInvite = function (seed, host, reveal, private, caps) {
   if(!isObject(caps)) throw new Error('caps *must* be provided')
 
@@ -33,8 +46,8 @@ exports.createInvite = function (seed, host, reveal, private, caps) {
     type: 'user-invite',
     invite: keys.id,
     host: host, //sign our own key, to prove we created K
-    reveal: reveal ? u.box(reveal, u.hash(u.hash(seed))) : undefined,
-    private: private ? u.box(private, u.hash(seed)) : undefined
+    reveal: reveal ? u.box(reveal, hash2(seed)) : undefined,
+    private: private ? u.box(private, hash(seed)) : undefined
   })
 }
 
@@ -59,11 +72,11 @@ exports.verifyInvitePrivate = function (msg, seed, caps) {
   seed = toBuffer(seed)
   exports.verifyInvitePublic(msg, caps)
   if(msg.content.reveal) {
-    var reveal = u.unbox(msg.content.reveal, u.hash(u.hash(seed)))
+    var reveal = u.unbox(msg.content.reveal, hash2(seed))
     if(!reveal) throw code(new Error('could not decrypt reveal field'), 'decrypt-reveal-failed')
   }
   if(msg.content.private) {
-    var private = u.unbox(msg.content.private, u.hash(seed))
+    var private = u.unbox(msg.content.private, hash(seed))
     if(!private) throw code(new Error('could not decrypt private field'), 'decrypt-private-failed')
   }
 
@@ -85,7 +98,7 @@ exports.createAccept = function (msg, seed, id, caps) {
     id: id
   }
   if(msg.content.reveal)
-    content.key = u.hash(u.hash(seed)).toString('base64')
+    content.key = hash2(seed).toString('base64')
   return ssbKeys.signObj(keys, caps.userInvite, content)
 }
 
@@ -120,7 +133,7 @@ exports.verifyAccept = function (accept, invite_msg, caps) {
   if(invite_msg.content.reveal) {
     if(!accept.content.key)
       throw code(new Error('accept missing reveal key, when invite has it'), 'accept-must-reveal-key')
-    reveal = u.unbox(invite_msg.content.reveal, Buffer.from(accept.content.key, 'base64'))
+    reveal = u.unbox(invite_msg.content.reveal, toBuffer(accept.content.key))
     if(!reveal) throw code(new Error('accept did not correctly reveal invite'), 'decrypt-accept-reveal-failed')
   }
 
