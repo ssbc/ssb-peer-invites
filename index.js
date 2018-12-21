@@ -315,6 +315,9 @@ exports.init = function (sbot, config) {
 
     var host_id = opts.id || sbot.id
     getNearbyPubs(opts, function (err, near) {
+      if(near.length == 0 && !opts.allowWithoutPubs)
+        return cb(new Error('failed to find any suitable pubs'))
+
       var seed = crypto.randomBytes(32).toString('base64')
       sbot.identities.publishAs({
         id: host_id,
@@ -324,7 +327,7 @@ exports.init = function (sbot, config) {
         cb(null, {
           seed: seed,
           invite: data.key,
-          pubs: near,
+          pubs: near.map(function (e) { return e.address }),
         })
       })
     })
@@ -435,5 +438,4 @@ exports.init = function (sbot, config) {
 
   return invites
 }
-
 
