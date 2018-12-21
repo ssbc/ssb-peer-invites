@@ -1,0 +1,138 @@
+var crypto = require('crypto')
+var createClient = require('ssb-client')
+var explain = require('explain-error')
+
+var ssbKeys = require('ssb-keys')
+var tape = require('tape')
+var pull = require('pull-stream')
+var ref = require('ssb-ref')
+
+var createSbot = require('scuttlebot')
+  .use(require('ssb-links'))
+  .use(require('scuttlebot/plugins/replicate'))
+  .use(require('scuttlebot/plugins/gossip'))
+  .use(require('ssb-query'))
+  .use(require('ssb-device-address'))
+  .use(require('ssb-identities'))
+  .use(require('ssb-friends'))
+ .use(require('../'))
+
+function all(stream, cb) {
+  return pull(stream, pull.collect(cb))
+}
+
+var caps = {
+  sign: crypto.randomBytes(32),
+  userInvite: crypto.randomBytes(32),
+  shs: crypto.randomBytes(32),
+}
+
+var alice = createSbot({
+  temp: true,
+  timeout: 1000,
+  port: 12342,
+  keys:ssbKeys.generate(),
+  caps: caps
+})
+
+var bob = createSbot({
+  temp: true,
+  timeout: 1000,
+  port: 12343,
+  keys:ssbKeys.generate(),
+  caps: caps
+})
+
+var carol = createSbot({
+  temp: true,
+  timeout: 1000,
+  port: 12344,
+  keys:ssbKeys.generate(),
+  caps: caps
+})
+
+tape('setup', function (t) {
+
+  //once alice has 3 messages (one from her, and two from carol)
+  //can move to next test.
+  var a = 3
+  alice.post(function (data) {
+    if(--a) return
+    t.end()
+  })
+
+  carol.deviceAddress.announce({
+    address:carol.getAddress('device'),
+    availability: 1
+  }, function (err, msg) {
+    if(err) throw err
+    t.ok(msg)
+    alice.publish({
+      type: 'contact', contact: carol.id, following: true
+    }, function (err, msg) {
+      if(err) throw err
+      t.ok(msg)
+      carol.publish({
+        type: 'contact', contact: alice.id, following: true
+      }, function (err, msg) {
+        if(err) throw err
+        t.ok(msg)
+        alice.connect(carol.getAddress(), function (err) {
+          if(err) throw err
+        })
+      })
+    })
+  })
+})
+
+var invite
+tape('create-invite, with automatic pubs', function (t) {
+  var n = 1
+  //wait until carol has received alice's invite
+  carol.post(function (data) {
+    if(data.value.content.type === 'user-invite') {
+      console.log('invit?', data)
+      if(--n) return
+      t.end()
+    }
+  })
+
+  setTimeout(function () {
+    alice.userInvites.create({}, function (err, _invite) {
+      if(err) throw err
+      console.log('create invite')
+      invite = _invite
+    })
+  })
+
+})
+
+tape('accept invite', function (t) {
+  alice.get(invite.invite, function (err, invite_msg) {
+    if(err) throw err
+    t.deepEqual(invite.pubs, [carol.getAddress('device')])
+    
+    bob.userInvites.openInvite(invite, function (err, _invite_msg) {
+      if(err) throw explain(err, 'error while opening invite')
+      t.deepEqual(_invite_msg, invite_msg)
+      bob.userInvites.acceptInvite(invite, function (err) {
+        if(err) throw err
+        t.end()
+      })
+    })
+  })
+})
+
+//there is another race here. seems flumedb
+//doesn't like it if you close and immediately
+//it receives a message. (should just drop that though)
+//we don't need to fix that just to get user-invites working, though.
+tape('cleanup', function (t) {
+  setTimeout(function () {
+    alice.close()
+    carol.close()
+    bob.close()
+    t.end()
+  }, 1000)
+})
+

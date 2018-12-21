@@ -64,7 +64,7 @@ tape('create an invite', function (t) {
   //to test multiple identity support, and also simulate confirmation by pub.
   alice.identities.create(function (err, carol_id) {
     if(err) throw err
-    alice.userInvites.create({id: carol_id}, function (err, invite) {
+    alice.userInvites.create({id: carol_id, allowWithoutPubs: true}, function (err, invite) {
       if(err) throw err
       var seed = invite.seed
       var invite_id = invite.invite

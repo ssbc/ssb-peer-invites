@@ -62,7 +62,7 @@ tape('create an invite', function (t) {
 //  alice.publish(content, function (err, msg) {
   //  I.verifyInvitePublic(msg.value)
 
-  alice.userInvites.create({}, function (err, invite) {
+  alice.userInvites.create({allowWithoutPubs: true}, function (err, invite) {
     if(err) throw err
     var seed = invite.seed
     var invite_id = invite.invite
