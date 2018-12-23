@@ -119,7 +119,7 @@ calling openInvite will not publish a message, but may make a network connection
 ### userInvites.acceptInvite(invite, cb)
 
 accept the invite. this publishes a `user-invite/accept` message locally,
-and then contacts a pub and asks them publish a confirm message.
+and then contacts a pub and asks them publish a `user-invite/confirm` message.
 
 ## example
 
@@ -283,6 +283,7 @@ it just embeds the accept_message.
 # License
 
 MIT
+
 
 
 
