@@ -14,6 +14,48 @@ This generally worked fairly well, but had some problems:
 * some pubs more inviting than others "too open"
 * hard to tell if growth was word of mouth or not
 
+## usage
+
+With user invites, you can create invites without having a pub.
+However, your local sbot needs to support user invites.
+that requires installing the following, if you havn't already:
+
+```
+sbot plugins.install ssb-device-address
+sbot plugins.install ssb-identities
+sbot plugins.install ssb-user-invites
+```
+
+with user invites, you do not need to have your own pub server,
+as long as you have a friend has one (that supports user-invites).
+To enable user-invites on your pub, install the same modules
+and restart, and also announce a public address using
+[ssb-device-address](https://github.com/ssbc/ssb-device-address)
+
+then restart your sbot local server, there will be a bit of
+index building, then you can create invites!
+
+```
+>sbot userInvites.create
+invite_code...
+```
+send `invite_code` to your friend and they can use
+
+```
+>sbot userInvites.openInvite {invite_code}
+{ private:..., reveal:...}
+``
+to see what you are inviting them to. this can contain a welcome
+message. The `private` section is only readable by them,
+but the `reveal` section is made public once they accept the invite.
+
+to actually accept the invite, they do:
+
+```
+>sbot userInvites.acceptInvite {invite_code}
+accept_message...
+```
+
 ## user invites - how it works
 
 host (user creating the invite) generates a _seed_, and publishes an invitation
@@ -241,4 +283,7 @@ it just embeds the accept_message.
 # License
 
 MIT
+
+
+
 
