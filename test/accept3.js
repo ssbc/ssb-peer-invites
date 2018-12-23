@@ -3,7 +3,7 @@
 var crypto = require('crypto')
 var I = require('../valid')
 var createClient = require('ssb-client')
-
+var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
@@ -24,7 +24,6 @@ var createSbot = require('scuttlebot')
   .use(require('ssb-identities'))
   .use(require('ssb-friends'))
   .use(require('../'))
-
 
 function toId(msg) {
   return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
@@ -64,8 +63,9 @@ tape('create an invite', function (t) {
   //to test multiple identity support, and also simulate confirmation by pub.
   alice.identities.create(function (err, carol_id) {
     if(err) throw err
-    alice.userInvites.create({id: carol_id, allowWithoutPubs: true}, function (err, invite) {
+    alice.userInvites.create({id: carol_id, allowWithoutPubs: true}, function (err, _invite) {
       if(err) throw err
+      var invite = u.parse(_invite)
       var seed = invite.seed
       var invite_id = invite.invite
 
@@ -97,5 +97,4 @@ tape('create an invite', function (t) {
     })
   })
 })
-
 

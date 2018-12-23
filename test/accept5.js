@@ -1,7 +1,7 @@
 var crypto = require('crypto')
 var I = require('../valid')
 var createClient = require('ssb-client')
-
+var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
@@ -56,8 +56,9 @@ var bob = createSbot({
 
 tape('create an invite', function (t) {
 
-  alice.userInvites.create({allowWithoutPubs: true}, function (err, invite) {
+  alice.userInvites.create({allowWithoutPubs: true}, function (err, _invite) {
     if(err) throw err
+    var invite = u.parse(_invite)
     var seed = invite.seed
     var invite_id = invite.invite
 
@@ -103,17 +104,4 @@ tape('create an invite', function (t) {
     })
   })
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -6,6 +6,7 @@ var ssbKeys = require('ssb-keys')
 var tape = require('tape')
 var pull = require('pull-stream')
 var ref = require('ssb-ref')
+var u = require('../util')
 
 var createSbot = require('scuttlebot')
   .use(require('ssb-links'))
@@ -101,7 +102,9 @@ tape('create-invite, with automatic pubs', function (t) {
     alice.userInvites.create({}, function (err, _invite) {
       if(err) throw err
       console.log('create invite')
-      invite = _invite
+      invite = u.parse(_invite)
+      console.log(_invite)
+      console.log(invite)
     })
   })
 
