@@ -7,7 +7,7 @@ var paramap    = require('pull-paramap')
 var ssbClient  = require('ssb-client')
 var crypto     = require('crypto')
 var ssbKeys    = require('ssb-keys')
-
+var u          = require('./util')
 
 function code(err, c) {
   err.code = 'user-invites:'+c
@@ -24,6 +24,10 @@ function isFunction (f) {
 
 function isObject (o) {
   return o && typeof o == 'object'
+}
+
+function isString (s) {
+  return typeof s == 'string'
 }
 
 function toBuffer(b) {
@@ -324,11 +328,13 @@ exports.init = function (sbot, config) {
         content: I.createInvite(seed, host_id, opts.reveal, opts.private, caps)
       }, function (err, data) {
         if(err) return cb(err)
-        cb(null, {
+        var invite = {
           seed: seed,
           invite: data.key,
+          cap: opts.cap,
           pubs: near.map(function (e) { return e.address }),
-        })
+        }
+        cb(null, u.stringify(invite))
       })
     })
   }
@@ -365,6 +371,7 @@ exports.init = function (sbot, config) {
   //TODO: check if invite is already held locally
   //      if so, just get it. when got, update local db.
   invites.openInvite = function (invite, cb) {
+    if(isString(invite)) invite = u.parseInvite(invite)
     invites.getInvite(invite.invite, function (err, msg) {
       if(msg)
         next(msg)
@@ -396,6 +403,7 @@ exports.init = function (sbot, config) {
   }
 
   invites.acceptInvite = function (opts, cb) {
+    if(isString(opts)) opts = u.parseInvite(opts)
     var invite = isObject(opts.invite) ? opts.invite : opts
     var invite_id = invite.invite
     var id = opts.id || sbot.id
