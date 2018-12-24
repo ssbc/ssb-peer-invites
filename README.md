@@ -44,7 +44,7 @@ send `invite_code` to your friend and they can use
 ```
 >sbot userInvites.openInvite {invite_code}
 { private:..., reveal:...}
-``
+```
 to see what you are inviting them to. this can contain a welcome
 message. The `private` section is only readable by them,
 but the `reveal` section is made public once they accept the invite.
