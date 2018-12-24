@@ -59,7 +59,9 @@ tape('setup', function (t) {
   var a = 3
   alice.post(function (data) {
     if(--a) return
-    t.end()
+
+    //HACK: wait for servers to start
+    setTimeout(function () { t.end() }, 1000)
   })
 
   carol.deviceAddress.announce({
@@ -138,4 +140,6 @@ tape('cleanup', function (t) {
     t.end()
   }, 1000)
 })
+
+
 
