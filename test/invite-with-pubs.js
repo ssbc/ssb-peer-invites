@@ -88,6 +88,14 @@ tape('setup', function (t) {
   })
 })
 
+tape('getNearbyPubs', function (t) {
+  alice.userInvites.getNearbyPubs({}, function (err, pubs) {
+    if(err) throw err
+    t.ok(pubs.length)
+    t.end()
+  })
+})
+
 var invite
 tape('create-invite, with automatic pubs', function (t) {
   var n = 1
