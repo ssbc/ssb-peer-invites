@@ -41,7 +41,8 @@ exports.manifest = {
   getInvite: 'async',
   confirm: 'async',
   create: 'async',
-  willReplicate: 'async'
+  willReplicate: 'async',
+  getNearbyPubs: 'async'
 }
 
 exports.permissions = {
@@ -265,11 +266,13 @@ exports.init = function (sbot, config) {
   }
 
   //retrive pubs who might be willing to confirm your invite. (used when creating an invte)
-  function getNearbyPubs (opts, cb) {
+  invites.getNearbyPubs = function (opts, cb) {
+    if(isFunction (opts))
+      cb = opts, opts = {}
     var maxHops = opts.hops || 2
     sbot.deviceAddress.getState(function (err, state) {
       if(err) return cb(explain(err, 'could not retrive any device addresses'))
-      sbot.friends.hops({hops: opts.hops, reverse: true}, function (err, hops) {
+      sbot.friends.hops({hops: opts.hops, reverse: true, start: opts.id}, function (err, hops) {
         if(err) return cb(explain(err, 'could not retrive nearby friends'))
         var near = []
         for(var k in state) {
@@ -294,20 +297,49 @@ exports.init = function (sbot, config) {
 
         if(opts.offline) return cb(null, near)
 
+        var count = 3, found = []
+
+        function pushFound (pub, err, will) {
+          found.push({
+            id: pub.id, address: pub.address,
+            availability: pub.availability,
+            hops: pub.hops,
+            error: err && err.message, willReplicate: !!will
+          })
+          if(will) count --
+          //sort in order of wether they will replicate,
+          //or availability
+          found.sort(function (a, b) {
+            (!!b.willReplicate) - (!!a.willReplicate) || b.availability - a.availability
+          })
+        }
+
         pull(
           pull.values(near),
           paramap(function (pub, cb) {
+            //if opts.id != sbot.id connect using ssb client
+            //so that you ask willReplicate from the correct id.
             sbot.connect(pub.address, function (err, rpc) {
+              //skip pubs that were not contactable
+              if(err) {
+                pushFound(pub, err)
+                return cb()
+              }
               rpc.userInvites.willReplicate({}, function (err, v) {
                 //pass through input if true, else (err or false)
                 //then drop.
+                pushFound(pub, err, !!v)
                 cb(null, v && pub)
               })
             })
           },3),
-          pull.filter(Boolean),
-          pull.take(3),
-          pull.collect(cb)
+          function (read) {
+            read(null, function next (err, pub) {
+              if(err) return cb(null, found)
+              else if(count) read(null, next)
+              else read(true, function (_) { cb(null, found) })
+            })
+          }
         )
       })
     })
@@ -318,7 +350,7 @@ exports.init = function (sbot, config) {
       return opts(new Error ('user-invites: expected: options *must* be provided.'))
 
     var host_id = opts.id || sbot.id
-    getNearbyPubs(opts, function (err, near) {
+    invites.getNearbyPubs(opts, function (err, near) {
       if(near.length == 0 && !opts.allowWithoutPubs)
         return cb(new Error('failed to find any suitable pubs'))
 
@@ -446,4 +478,11 @@ exports.init = function (sbot, config) {
 
   return invites
 }
+
+// I am not happy with how big this file is
+// but I can't see a really good line along which to break it up.
+
+
+
+
 
