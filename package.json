@@ -13,6 +13,7 @@
     "is-canonical-base64": "^1.1.1",
     "pull-paramap": "^1.2.2",
     "pull-stream": "^3.6.9",
+    "ssb-client": "^4.6.0",
     "ssb-keys": "^7.0.14",
     "ssb-ref": "^2.9.1"
   },
