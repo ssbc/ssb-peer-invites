@@ -42,7 +42,9 @@ exports.manifest = {
   confirm: 'async',
   create: 'async',
   willReplicate: 'async',
-  getNearbyPubs: 'async'
+  getNearbyPubs: 'async',
+  openInvite: 'async',
+  acceptInvite: 'async'
 }
 
 exports.permissions = {
@@ -481,8 +483,4 @@ exports.init = function (sbot, config) {
 
 // I am not happy with how big this file is
 // but I can't see a really good line along which to break it up.
-
-
-
-
 
