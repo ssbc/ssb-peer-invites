@@ -45,11 +45,12 @@ send `invite_code` to your friend and they can use
 >sbot userInvites.openInvite {invite_code}
 { private:..., reveal:...}
 ```
-to see what you are inviting them to. this can contain a welcome
-message. The `private` section is only readable by them,
-but the `reveal` section is made public once they accept the invite.
+This shows what you have been invited to. This can contain a welcome
+message, or access to private groups (TODO).
+The `private` section is only readable by the guest,
+but the `reveal` section is made public once the guest accepts the invite.
 
-to actually accept the invite, they do:
+then, to actually accept the invite, they do:
 
 ```
 >sbot userInvites.acceptInvite {invite_code}
@@ -75,11 +76,6 @@ be revealed once they accept. If they accept, they publish a accept message
 on their own feed (`type: 'user-invite/accept'`), and then pass that to the pub,
 who then publishes a confirm message (`type: user-invite/confirm'`).
 Now peers who replicate the pub's feed can see the guest has arrived.
-
-## TODO
-
-* decide on encoding. must contain: `seed, invite, pubs+`
-* test that it works on unreliable connections and end points.
 
 ## api
 
@@ -125,7 +121,7 @@ and then contacts a pub and asks them publish a `user-invite/confirm` message.
 
 Alice wishes to invite Bob to her corner of the ssb
 network. But she is does not have a pub server.
-She creates a user invite, indicating that she
+She creates a _user invite_, indicating that she
 is creating an invite. This is just a message on her feed.
 
 ``` js
@@ -154,7 +150,7 @@ that alice created the invite code, and so that no one
 else can claim they invited alice's friend.
 The signature has an `invite_cap` so that it cannot be confused with another type of signature.
 
-*** TODO *** alice encodes the seed, the message id,
+Alice encodes the seed, the invite message id,
 and the addresses of some pubs that are likely
 to replicate bob. this is called the "invite code"
 
@@ -162,17 +158,18 @@ she then gives the invite code to bob via a channel
 she already trusts, say, a 1:1 chat app.
 
 bob then connects to one of the pubs in the invite
-code, using the guest id derived from the seed
-(which the pub will recognise as alice's guest)
+code, using the seed to derive a private key.
+(which the pub will recognise as alice's guest id)
 
-bob then requests the invite message, and probably
+bob then requests the invite message id, and probably
 alice's feed. if the invite has reveal and public
-fields, bob decrypts them.
+fields, bob decrypts them by hashing the seed.
 
-if bob accepts the invite,
+If bob accepts the invite,
 bob then creates an "user-invite/accept" message,
 which is a proof that he has the seed, and knows
-who's invite he is accepting.
+who's invite he is accepting, and indicates the long term
+key he will be using. At this point, he can forget the seed.
 
 ``` js
 var invite_key = ssbKeys.generate(null, seed)
@@ -191,7 +188,7 @@ sbot_bob.publish(ssbKeys.signObj({
 ```
 
 This is then passed to the pub, who verifies it,
-and if is correct, posts a new message containing it.
+and if is correct, posts a confirm message.
 
 ``` js
 sbot_pub.publish({
@@ -206,7 +203,7 @@ that bob created. this makes the message available
 for other peers to validate, since they do not follow
 bob yet.
 
-the pub now knows that bob and alice are friends,
+The pub now knows that bob and alice are friends,
 and will start replicating bob. Other friends
 of alice who replicate the pub will also see this,
 and they will also start replicating bob. Thus
@@ -283,6 +280,13 @@ it just embeds the accept_message.
 # License
 
 MIT
+
+
+
+
+
+
+
 
 
 
