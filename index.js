@@ -64,7 +64,7 @@ exports.init = function (sbot, config) {
   var layer = sbot.friends.createLayer('user-invites')
 
   var caps = config.caps || {}
-  caps.userInvite = caps.userInvite || require('./cap')
+  caps.userInvite = caps.userInvite
   var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
 
   function reduce (acc, data, _seq) {

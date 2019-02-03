@@ -10,7 +10,6 @@ var caps = {
   shs: crypto.randomBytes(32),//.toString('base64'),
 }
 
-var invite_key = require('../cap')
 
 var hash = u.hash
 

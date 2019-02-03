@@ -6,7 +6,6 @@ var i = require('../valid')
 var u = require('../util')
 var crypto = require('crypto')
 
-var invite_key = require('../cap')
 
 var hash = u.hash
 

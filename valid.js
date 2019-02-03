@@ -2,8 +2,6 @@ var ssbKeys = require('ssb-keys')
 var isMsg = require('ssb-ref').isMsg
 var u = require('./util')
 
-var invite_key = require('./cap')
-
 function code(err, c) {
   err.code = 'user-invites:'+c
   return err
