@@ -6,5 +6,6 @@ function hash(s) {
   )
 }
 
-module.exports =  hash("user-invites:DEVELOPMENT") //XXX DON'T publish without fixing this!
+module.exports =  hash("peer-invites:DEVELOPMENT") //XXX DON'T publish without fixing this!
 
+// TODO

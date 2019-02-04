@@ -8,9 +8,10 @@ var ssbClient  = require('ssb-client')
 var crypto     = require('crypto')
 var ssbKeys    = require('ssb-keys')
 var u          = require('./util')
+var cap        = require('./cap')
 
 function code(err, c) {
-  err.code = 'user-invites:'+c
+  err.code = 'peer-invites:'+c
   return err
 }
 
@@ -34,7 +35,7 @@ function toBuffer(b) {
   return Buffer.isBuffer(b) ? b : Buffer.from(b, 'base64')
 }
 
-exports.name = 'user-invites'
+exports.name = 'peer-invites'
 
 exports.version = '1.0.0'
 exports.manifest = {
@@ -61,10 +62,10 @@ exports.permissions = {
 
 exports.init = function (sbot, config) {
   var init = false
-  var layer = sbot.friends.createLayer('user-invites')
+  var layer = sbot.friends.createLayer('peer-invites')
 
   var caps = config.caps || {}
-  caps.userInvite = caps.userInvite || require('./cap')
+  caps.peerInvite = caps.peerInvite || cap
   var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
 
   function reduce (acc, data, _seq) {
@@ -124,7 +125,7 @@ exports.init = function (sbot, config) {
 
   var state
   //a hack here, so that we can grab a handle on invites.value.set
-  var invites = sbot._flumeUse('user-invites', function (log, name) {
+  var invites = sbot._flumeUse('peer-invites', function (log, name) {
     var _invites = Reduce(3, reduce, null, null, initial)(log, name)
     state = _invites.value
     return _invites
@@ -152,7 +153,7 @@ exports.init = function (sbot, config) {
       if(err) return cb(err)
       if(v.guests[id])
         return cb(null, {
-          allow: ['userInvites.getInvite', 'userInvites.confirm'],
+          allow: ['peerInvites.getInvite', 'peerInvites.confirm'],
           deny: null
         })
       fn.apply(null, args)
@@ -208,7 +209,7 @@ exports.init = function (sbot, config) {
   function getConfirm (invite_id, accept, cb) {
     getResponse(invite_id, function (msg) {
       return (
-        msg.content.type === 'user-invite/confirm' &&
+        msg.content.type === 'peer-invite/confirm' &&
         msg.content.embed.content.receipt === invite_id &&
         deepEquals(msg.content.embed, accept)
       )
@@ -261,7 +262,7 @@ exports.init = function (sbot, config) {
   function getAccept (invite_id, cb) {
     getResponse(invite_id, function (msg) {
       return (
-        msg.content.type === 'user-invite/accept' &&
+        msg.content.type === 'peer-invite/accept' &&
         msg.content.receipt === invite_id
       )
     }, cb)
@@ -327,7 +328,7 @@ exports.init = function (sbot, config) {
                 pushFound(pub, err)
                 return cb()
               }
-              rpc.userInvites.willReplicate({}, function (err, v) {
+              rpc.peerInvites.willReplicate({}, function (err, v) {
                 //pass through input if true, else (err or false)
                 //then drop.
                 pushFound(pub, err, !!v)
@@ -349,7 +350,7 @@ exports.init = function (sbot, config) {
 
   invites.create = function (opts, cb) {
     if(isFunction(opts))
-      return opts(new Error ('user-invites: expected: options *must* be provided.'))
+      return opts(new Error ('peer-invites: expected: options *must* be provided.'))
 
     var host_id = opts.id || sbot.id
     invites.getNearbyPubs(opts, function (err, near) {
@@ -385,7 +386,7 @@ exports.init = function (sbot, config) {
         remote: addr,
         caps: {shs: invite.cap || caps.shs},
         manifest: {
-          userInvites: {
+          peerInvites: {
             getInvite: 'async',
             confirm: 'async'
           }
@@ -412,7 +413,7 @@ exports.init = function (sbot, config) {
       else
         connectFirst(invite, function (err, rpc) {
           if(err) return cb(err)
-          rpc.userInvites.getInvite(invite.invite, function (err, msg) {
+          rpc.peerInvites.getInvite(invite.invite, function (err, msg) {
             if(err) return cb(err)
             next(msg)
           })
@@ -441,8 +442,6 @@ exports.init = function (sbot, config) {
     var invite = isObject(opts.invite) ? opts.invite : opts
     var invite_id = invite.invite
     var id = opts.id || sbot.id
-    var pubs = invite.pubs
-    var keys = ssbKeys.generate(null, toBuffer(invite.seed))
 
     //check wether this invite is already accepted.
     //or if the acceptance has been publish, but not yet confirmed.
@@ -469,7 +468,7 @@ exports.init = function (sbot, config) {
         if(!confirm)
           connectFirst(invite, function (err, rpc) {
             if(err) return cb(err)
-            rpc.userInvites.confirm(accept, function (err, confirm) {
+            rpc.peerInvites.confirm(accept, function (err, confirm) {
               //TODO: store confirms for us in the state.
               cb(err, confirm)
             })

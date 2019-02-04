@@ -1,4 +1,4 @@
-# user-invites
+# peer-invites
 
 when ssb was younger, we created the current invite system,
 henceforth in this document referred to as the "followbot" system.
@@ -16,19 +16,19 @@ This generally worked fairly well, but had some problems:
 
 ## usage
 
-With user invites, you can create invites without having a pub.
-However, your local sbot needs to support user invites.
+With peer invites, you can create invites without having a pub.
+However, your local sbot needs to support peer invites.
 that requires installing the following, if you havn't already:
 
 ```
 sbot plugins.install ssb-device-address
 sbot plugins.install ssb-identities
-sbot plugins.install ssb-user-invites
+sbot plugins.install ssb-peer-invites
 ```
 
-with user invites, you do not need to have your own pub server,
-as long as you have a friend has one (that supports user-invites).
-To enable user-invites on your pub, install the same modules
+with peer invites, you do not need to have your own pub server,
+as long as you have a friend has one (that supports peer-invites).
+To enable peer-invites on your pub, install the same modules
 and restart, and also announce a public address using
 [ssb-device-address](https://github.com/ssbc/ssb-device-address)
 
@@ -36,13 +36,13 @@ then restart your sbot local server, there will be a bit of
 index building, then you can create invites!
 
 ```
->sbot userInvites.create
+>sbot peerInvites.create
 invite_code...
 ```
 send `invite_code` to your friend and they can use
 
 ```
->sbot userInvites.openInvite {invite_code}
+>sbot peerInvites.openInvite {invite_code}
 { private:..., reveal:...}
 ```
 This shows what you have been invited to. This can contain a welcome
@@ -53,14 +53,14 @@ but the `reveal` section is made public once the guest accepts the invite.
 then, to actually accept the invite, they do:
 
 ```
->sbot userInvites.acceptInvite {invite_code}
+>sbot peerInvites.acceptInvite {invite_code}
 accept_message...
 ```
 
-## user invites - how it works
+## peer invites - how it works
 
-host (user creating the invite) generates a _seed_, and publishes an invitation
-message (`type:'user-invite'`) for their guest (new user, receiving the invite)
+host (peer creating the invite) generates a _seed_, and publishes an invitation
+message (`type:'peer-invite'`) for their guest (new peer, receiving the invite)
 The message may contain both a private and a reveal section.
 (private section is only readably be the guest, but reveal is published
 if they guest accepts the invite).
@@ -73,13 +73,13 @@ The guest accepting the invite is a two step process. First they use the
 seed and the pub addresses to connect to a pub and request the invite message.
 Here they may read a private message from their host, as well as see what will
 be revealed once they accept. If they accept, they publish a accept message
-on their own feed (`type: 'user-invite/accept'`), and then pass that to the pub,
-who then publishes a confirm message (`type: user-invite/confirm'`).
+on their own feed (`type: 'peer-invite/accept'`), and then pass that to the pub,
+who then publishes a confirm message (`type: peer-invite/confirm'`).
 Now peers who replicate the pub's feed can see the guest has arrived.
 
 ## api
 
-### userInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
+### peerInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
 
 does everything needed to create an invite. generates a seed, finds pubs to act
 as introducers, and publishes an invite message.
@@ -90,38 +90,38 @@ that `private` is read only by the guest, but the key to `reveal` is published
 as the guest accepts the invite. (so it's eventually read by everyone, but only
 if the guest accepts the invite)
 
-user-invites have a lot more accountability than the previous _followbot_ system.
+peer-invites have a lot more accountability than the previous _followbot_ system.
 You can see who invited who. (so if someone invites an asshole, the community can see
 who did that, but the host will already know that, so they'll think twice, or caution
 their friend to not be a jerk) `reveal` can be used to enhance this. It could for
 example - be used to assign someone a name before they are invited.
 
 private can be used for the benefit of the guest. it may contain a welcome message
-or links to threads or channels, or users to follow.
+or links to threads or channels, or peers to follow.
 
 on success, cb is called with `{invite: msgId, seed: seed, pubs: [addr,...]}`
 this information can be sent to the guest as the invite!
 
-### userInvites.openInvite(invite, cb(err, invite_msg, content)
+### peerInvites.openInvite(invite, cb(err, invite_msg, content)
 
-"open" an invite. retrives the invite message created by the host (using `userInvites.create`)
+"open" an invite. retrives the invite message created by the host (using `peerInvites.create`)
 and decrypt any encrypted values. since the invite may contain a welcome message, etc,
-user interfaces implementing user interfaces should process user-invites in two steps.
-firstly opening the invite, then accepting (on user confirmation)
+peer interfaces implementing peer interfaces should process peer-invites in two steps.
+firstly opening the invite, then accepting (on peer confirmation)
 
 calling openInvite will not publish a message, but may make a network connection
 (if you do not already possess the `invite_msg` which you won't the first time)
 
-### userInvites.acceptInvite(invite, cb)
+### peerInvites.acceptInvite(invite, cb)
 
-accept the invite. this publishes a `user-invite/accept` message locally,
-and then contacts a pub and asks them publish a `user-invite/confirm` message.
+accept the invite. this publishes a `peer-invite/accept` message locally,
+and then contacts a pub and asks them publish a `peer-invite/confirm` message.
 
 ## example
 
 Alice wishes to invite Bob to her corner of the ssb
 network. But she is does not have a pub server.
-She creates a _user invite_, indicating that she
+She creates a _peer invite_, indicating that she
 is creating an invite. This is just a message on her feed.
 
 ``` js
@@ -130,7 +130,7 @@ var invite_key = ssbKeys.generate(null, seed)
 var invite_cap = require('ssb-config').caps.invite
 
 alice_sbot.publish(ssbKeys.signObj({
-    type: 'user-invite',
+    type: 'peer-invite',
     invite: invite_key.id,
     host: alice.id,
 
@@ -166,7 +166,7 @@ alice's feed. if the invite has reveal and public
 fields, bob decrypts them by hashing the seed.
 
 If bob accepts the invite,
-bob then creates an "user-invite/accept" message,
+bob then creates an "peer-invite/accept" message,
 which is a proof that he has the seed, and knows
 who's invite he is accepting, and indicates the long term
 key he will be using. At this point, he can forget the seed.
@@ -176,7 +176,7 @@ var invite_key = ssbKeys.generate(null, seed)
 var invite_cap = require('ssb-config').caps.invite
 
 sbot_bob.publish(ssbKeys.signObj({
-    type: 'user-invite/accept',
+    type: 'peer-invite/accept',
     receipt: getId(invite_msg), //the id of the invite message
     id: bob.id, //the id we are accepting this invite as.
     //if the invite has a reveal, key must be included.
@@ -192,7 +192,7 @@ and if is correct, posts a confirm message.
 
 ``` js
 sbot_pub.publish({
-    type: 'user-invite/confirm',
+    type: 'peer-invite/confirm',
     embed: invite_accept_msg //embed the whole message.
   }, function (err, invite_confirm_msg) {
     ...
@@ -234,13 +234,13 @@ with what alice says about him)
 
 ## messages
 
-### user-invite
+### peer-invite
 
 published by the host when creating the invite.
 
 ``` js
 {
-  type: 'user-invite',
+  type: 'peer-invite',
   host: author_id,  // author of this message.
   invite: guest_temp_id, // public key guest will use to authenticate
   reveal: boxed,    // encrypted message to be revealed (optional)
@@ -249,13 +249,13 @@ published by the host when creating the invite.
 }
 ```
 
-### user-invite/accept
+### peer-invite/accept
 
 published by guest when accepting the above invite.
 
 ``` js
 {
-  type: 'user-invite/accept',
+  type: 'peer-invite/accept',
   receipt: invite_id,     // the id of the invite message (which is being accepted).
   id: guest_long_term_id, // the real identity which the guest will use now.
   key: hash(seed),        // key used to encrypt the `reveal` field. required if reveal was present.
@@ -265,14 +265,14 @@ published by guest when accepting the above invite.
 }
 ```
 
-### user-invite/confirm
+### peer-invite/confirm
 
 published by a pub, when observing an invite accept message.
 it just embeds the accept_message.
 
 ``` js
 {
-  type: 'user-invite/confirm',
+  type: 'peer-invite/confirm',
   embed: accept_message
 }
 ```

@@ -29,7 +29,7 @@ var createSbot = require('scuttlebot')
 
 var caps = {
   sign: crypto.randomBytes(32),//.toString('base64'),
-  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  peerInvite: crypto.randomBytes(32),//.toString('base64'),
   shs: crypto.randomBytes(32),//.toString('base64'),
 }
 
@@ -58,7 +58,7 @@ tape("alice will replicate bob's guests", function (t) {
     console.log(data)
     bob.connect(alice.getAddress(), function (err, _alice) {
       if(err) throw err
-      _alice.userInvites.willReplicate(function (err, wr) {
+      _alice.peerInvites.willReplicate(function (err, wr) {
         if(err) throw err
         t.ok(wr) //alice should replicate for bob's guests
         _alice.close()
@@ -71,7 +71,7 @@ tape("alice will replicate bob's guests", function (t) {
 tape("bob won't replicate alice's guests", function (t) {
   alice.connect(bob.getAddress(), function (err, _bob) {
     if(err) throw err
-    _bob.userInvites.willReplicate(function (err, wr) {
+    _bob.peerInvites.willReplicate(function (err, wr) {
       if(err) throw err
       t.notOk(wr) //alice should replicate for bob's guests
       _bob.close()

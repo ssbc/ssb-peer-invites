@@ -5,7 +5,7 @@ var u = require('./util')
 var invite_key = require('./cap')
 
 function code(err, c) {
-  err.code = 'user-invites:'+c
+  err.code = 'peer-invites:'+c
   return err
 }
 
@@ -41,9 +41,9 @@ exports.createInvite = function (seed, host, reveal, private, caps) {
   seed = toBuffer(seed)
   var keys = ssbKeys.generate(null, seed) //K
   if(keys.id === host)
-    throw code(new Error('do not create invite with own public key'), 'user-invites:no-own-goal')
-  return ssbKeys.signObj(keys, caps.userInvite, {
-    type: 'user-invite',
+    throw code(new Error('do not create invite with own public key'), 'peer-invites:no-own-goal')
+  return ssbKeys.signObj(keys, caps.peerInvite, {
+    type: 'peer-invite',
     invite: keys.id,
     host: host, //sign our own key, to prove we created K
     reveal: reveal ? u.box(reveal, hash2(seed)) : undefined,
@@ -57,7 +57,7 @@ exports.verifyInvitePublic = function (msg, caps) {
   if(msg.content.host != msg.author)
     throw code(new Error('host did not match author'), 'host-must-match-author')
 
-  if(!ssbKeys.verifyObj(msg.content.invite, caps.userInvite, msg.content))
+  if(!ssbKeys.verifyObj(msg.content.invite, caps.peerInvite, msg.content))
     throw code(new Error('invalid invite signature'), 'invite-signature-failed')
 
   //an ordinary message so doesn't use special hmac_key, unless configed to.
@@ -93,19 +93,19 @@ exports.createAccept = function (msg, seed, id, caps) {
     throw code(new Error('seed does not match invite'), 'seed-must-match-invite')
   var inviteId = toMsgId(msg)
   var content = {
-    type: 'user-invite/accept',
+    type: 'peer-invite/accept',
     receipt: inviteId,
     id: id
   }
   if(msg.content.reveal)
     content.key = hash2(seed).toString('base64')
-  return ssbKeys.signObj(keys, caps.userInvite, content)
+  return ssbKeys.signObj(keys, caps.peerInvite, content)
 }
 
 exports.verifyAcceptOnly = function (accept, caps) {
   if(!isObject(caps)) throw new Error('caps *must* be provided')
-  if(accept.content.type !== 'user-invite/accept')
-    throw code(new Error('accept must be type: "user-invite/accept", was:'+JSON.stringify(accept.content.type)), 'accept-message-type')
+  if(accept.content.type !== 'peer-invite/accept')
+    throw code(new Error('accept must be type: "peer-invite/accept", was:'+JSON.stringify(accept.content.type)), 'accept-message-type')
   if(!isMsg(accept.content.receipt))
     throw code(new Error('accept must reference invite message id'), 'accept-reference-invite')
   //verify signed as ordinary message.
@@ -119,8 +119,8 @@ exports.verifyAccept = function (accept, invite_msg, caps) {
 
   exports.verifyAcceptOnly(accept, caps)
 
-  if(invite_msg.content.type !== 'user-invite')
-    throw code(new Error('accept must be type: invite, was:'+accept.content.type), 'user-invites:invite-message-type')
+  if(invite_msg.content.type !== 'peer-invite')
+    throw code(new Error('accept must be type: invite, was:'+accept.content.type), 'peer-invites:invite-message-type')
 
   var invite_id = toMsgId(invite_msg)
   var reveal
@@ -137,7 +137,7 @@ exports.verifyAccept = function (accept, invite_msg, caps) {
     if(!reveal) throw code(new Error('accept did not correctly reveal invite'), 'decrypt-accept-reveal-failed')
   }
 
-  if(!ssbKeys.verifyObj(invite_msg.content.invite, caps.userInvite, accept.content))
+  if(!ssbKeys.verifyObj(invite_msg.content.invite, caps.peerInvite, accept.content))
     throw code(new Error('did not verify invite-acceptance contents'), 'accept-invite-signature-failed')
   //an ordinary message, so does not use hmac_key
   return reveal || true
@@ -145,7 +145,7 @@ exports.verifyAccept = function (accept, invite_msg, caps) {
 
 exports.createConfirm =  function (accept) {
   return {
-    type: 'user-invite/confirm',
+    type: 'peer-invite/confirm',
     embed: accept,
     //second pointer back to receipt, so that links can find it
     //(since it unfortunately does not handle links nested deeper
