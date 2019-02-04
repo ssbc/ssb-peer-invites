@@ -16,8 +16,8 @@ This generally worked fairly well, but had some problems:
 
 ## usage
 
-With user invites, you can create invites without having a pub.
-However, your local sbot needs to support user invites.
+With peer invites, you can create invites without having a pub.
+However, your local sbot needs to support peer invites.
 that requires installing the following, if you havn't already:
 
 ```
@@ -26,7 +26,7 @@ sbot plugins.install ssb-identities
 sbot plugins.install ssb-peer-invites
 ```
 
-with user invites, you do not need to have your own pub server,
+with peer invites, you do not need to have your own pub server,
 as long as you have a friend has one (that supports peer-invites).
 To enable peer-invites on your pub, install the same modules
 and restart, and also announce a public address using
@@ -57,10 +57,10 @@ then, to actually accept the invite, they do:
 accept_message...
 ```
 
-## user invites - how it works
+## peer invites - how it works
 
-host (user creating the invite) generates a _seed_, and publishes an invitation
-message (`type:'peer-invite'`) for their guest (new user, receiving the invite)
+host (peer creating the invite) generates a _seed_, and publishes an invitation
+message (`type:'peer-invite'`) for their guest (new peer, receiving the invite)
 The message may contain both a private and a reveal section.
 (private section is only readably be the guest, but reveal is published
 if they guest accepts the invite).
@@ -97,7 +97,7 @@ their friend to not be a jerk) `reveal` can be used to enhance this. It could fo
 example - be used to assign someone a name before they are invited.
 
 private can be used for the benefit of the guest. it may contain a welcome message
-or links to threads or channels, or users to follow.
+or links to threads or channels, or peers to follow.
 
 on success, cb is called with `{invite: msgId, seed: seed, pubs: [addr,...]}`
 this information can be sent to the guest as the invite!
@@ -106,8 +106,8 @@ this information can be sent to the guest as the invite!
 
 "open" an invite. retrives the invite message created by the host (using `peerInvites.create`)
 and decrypt any encrypted values. since the invite may contain a welcome message, etc,
-user interfaces implementing user interfaces should process peer-invites in two steps.
-firstly opening the invite, then accepting (on user confirmation)
+peer interfaces implementing peer interfaces should process peer-invites in two steps.
+firstly opening the invite, then accepting (on peer confirmation)
 
 calling openInvite will not publish a message, but may make a network connection
 (if you do not already possess the `invite_msg` which you won't the first time)
@@ -121,7 +121,7 @@ and then contacts a pub and asks them publish a `peer-invite/confirm` message.
 
 Alice wishes to invite Bob to her corner of the ssb
 network. But she is does not have a pub server.
-She creates a _user invite_, indicating that she
+She creates a _peer invite_, indicating that she
 is creating an invite. This is just a message on her feed.
 
 ``` js
