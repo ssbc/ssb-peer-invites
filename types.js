@@ -1,5 +1,4 @@
 var ref = require('ssb-ref')
-var caps = {invite: require('./cap')}
 var ssbKeys = require('ssb-keys')
 var createIsBase64 = require('is-canonical-base64')
 

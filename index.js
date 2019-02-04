@@ -8,6 +8,7 @@ var ssbClient  = require('ssb-client')
 var crypto     = require('crypto')
 var ssbKeys    = require('ssb-keys')
 var u          = require('./util')
+var cap        = require('./cap')
 
 function code(err, c) {
   err.code = 'peer-invites:'+c
@@ -64,7 +65,7 @@ exports.init = function (sbot, config) {
   var layer = sbot.friends.createLayer('peer-invites')
 
   var caps = config.caps || {}
-  caps.peerInvite = caps.peerInvite || require('./cap')
+  caps.peerInvite = caps.peerInvite || cap
   var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
 
   function reduce (acc, data, _seq) {
@@ -441,8 +442,6 @@ exports.init = function (sbot, config) {
     var invite = isObject(opts.invite) ? opts.invite : opts
     var invite_id = invite.invite
     var id = opts.id || sbot.id
-    var pubs = invite.pubs
-    var keys = ssbKeys.generate(null, toBuffer(invite.seed))
 
     //check wether this invite is already accepted.
     //or if the acceptance has been publish, but not yet confirmed.
