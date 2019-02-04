@@ -15,7 +15,7 @@ var bob = ssbKeys.generate(null, hash('BOB'))
 
 var caps = {
   sign: crypto.randomBytes(32),//.toString('base64'),
-  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  peerInvite: crypto.randomBytes(32),//.toString('base64'),
   shs: crypto.randomBytes(32),//.toString('base64'),
 }
 

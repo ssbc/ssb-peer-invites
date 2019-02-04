@@ -31,7 +31,7 @@ function all(stream, cb) {
 
 var caps = {
   sign: crypto.randomBytes(32),//.toString('base64'),
-  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  peerInvite: crypto.randomBytes(32),//.toString('base64'),
   shs: crypto.randomBytes(32),//.toString('base64'),
 }
 
@@ -53,7 +53,7 @@ tape('create an invite', function (t) {
 
   //without the pubs option, do not allow creating
   //an invite.
-  alice.userInvites.create({}, function (err, invite) {
+  alice.peerInvites.create({}, function (err, invite) {
     t.ok(err)
     alice.close()
     t.end()

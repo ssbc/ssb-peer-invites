@@ -28,7 +28,7 @@ function all(stream, cb) {
 
 var caps = {
   sign: crypto.randomBytes(32),//.toString('base64'),
-  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  peerInvite: crypto.randomBytes(32),//.toString('base64'),
   shs: crypto.randomBytes(32),//.toString('base64'),
 }
 
@@ -61,7 +61,7 @@ tape('create an invite', function (t) {
         remote: alice.getAddress('device') || alice.getAddress('device'),
         caps: caps,
         manifest: {
-          userInvites: {
+          peerInvites: {
             getInvite: 'async',
             confirm: 'async'
           }
@@ -69,7 +69,7 @@ tape('create an invite', function (t) {
       },
       function (err, _bob) {
         if(err) throw err
-        _bob.userInvites.getInvite(msg.key, function (err, invite) {
+        _bob.peerInvites.getInvite(msg.key, function (err, invite) {
           if(err) throw err
           t.ok(invite)
           t.deepEqual(invite, msg.value)
@@ -81,7 +81,7 @@ tape('create an invite', function (t) {
 
           bob.publish(accept_content, function (err, accept) {
             if(err) throw err
-            _bob.userInvites.confirm(accept.value, function (err, msg) {
+            _bob.peerInvites.confirm(accept.value, function (err, msg) {
               if(err) throw err
               t.ok(msg)
           var confirm_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
@@ -91,7 +91,7 @@ tape('create an invite', function (t) {
 
 
                 //calling accept again should return the previous accept message.
-                _bob.userInvites.confirm(accept.value, function (err, msg2) {
+                _bob.peerInvites.confirm(accept.value, function (err, msg2) {
                   if(err) throw err
                   t.deepEqual(msg2, msg)
                   alice.close()

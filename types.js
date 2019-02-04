@@ -24,19 +24,19 @@ exports.isInvite = function (msg, caps) {
   if(!isObject(caps)) throw new Error('caps must be provided')
   //return true
   return isObject(msg) && isObject(msg.content) && (
-    'user-invite' === msg.content.type &&
+    'peer-invite' === msg.content.type &&
     ref.isFeed(msg.content.host) &&
     ref.isFeed(msg.content.invite) &&
     isMaybeBase64(msg.content.reveal) &&
     isMaybeBase64(msg.content.public) &&
     // signature must be valid !!!
-    ssbKeys.verifyObj(msg.content.invite, caps.userInvite, msg.content)
+    ssbKeys.verifyObj(msg.content.invite, caps.peerInvite, msg.content)
   )
 }
 
 exports.isAccept = function (msg) {
   return isObject(msg) && isObject(msg.content) && (
-    'user-invite/accept' === msg.content.type &&
+    'peer-invite/accept' === msg.content.type &&
     msg.content.id == msg.author &&
     ref.isMsg(msg.content.receipt) &&
     isMaybeBase64(msg.content.key) &&
@@ -49,7 +49,7 @@ exports.isAccept = function (msg) {
 
 exports.isConfirm = function (msg) {
   return isObject(msg) && isObject(msg.content) && (
-    'user-invite/confirm' === msg.content.type &&
+    'peer-invite/confirm' === msg.content.type &&
     exports.isAccept(msg.content.embed) &&
     //second pointer back to receipt, so that links can find it
     //(since it unfortunately does not handle links nested deeper

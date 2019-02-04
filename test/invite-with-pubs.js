@@ -24,7 +24,7 @@ function all(stream, cb) {
 
 var caps = {
   sign: crypto.randomBytes(32),
-  userInvite: crypto.randomBytes(32),
+  peerInvite: crypto.randomBytes(32),
   shs: crypto.randomBytes(32),
 }
 
@@ -89,7 +89,7 @@ tape('setup', function (t) {
 })
 
 tape('getNearbyPubs', function (t) {
-  alice.userInvites.getNearbyPubs({}, function (err, pubs) {
+  alice.peerInvites.getNearbyPubs({}, function (err, pubs) {
     if(err) throw err
     t.ok(pubs.length)
     t.end()
@@ -101,7 +101,7 @@ tape('create-invite, with automatic pubs', function (t) {
   var n = 1
   //wait until carol has received alice's invite
   carol.post(function (data) {
-    if(data.value.content.type === 'user-invite') {
+    if(data.value.content.type === 'peer-invite') {
       console.log('invit?', data)
       if(--n) return
       t.end()
@@ -109,7 +109,7 @@ tape('create-invite, with automatic pubs', function (t) {
   })
 
   setTimeout(function () {
-    alice.userInvites.create({}, function (err, _invite) {
+    alice.peerInvites.create({}, function (err, _invite) {
       if(err) throw err
       console.log('create invite')
       invite = u.parse(_invite)
@@ -125,10 +125,10 @@ tape('accept invite', function (t) {
     if(err) throw err
     t.deepEqual(invite.pubs, [carol.getAddress('device')])
     
-    bob.userInvites.openInvite(invite, function (err, _invite_msg) {
+    bob.peerInvites.openInvite(invite, function (err, _invite_msg) {
       if(err) throw explain(err, 'error while opening invite')
       t.deepEqual(_invite_msg, invite_msg)
-      bob.userInvites.acceptInvite(invite, function (err) {
+      bob.peerInvites.acceptInvite(invite, function (err) {
         if(err) throw err
         t.end()
       })
@@ -139,7 +139,7 @@ tape('accept invite', function (t) {
 //there is another race here. seems flumedb
 //doesn't like it if you close and immediately
 //it receives a message. (should just drop that though)
-//we don't need to fix that just to get user-invites working, though.
+//we don't need to fix that just to get peer-invites working, though.
 tape('cleanup', function (t) {
   setTimeout(function () {
     alice.close()

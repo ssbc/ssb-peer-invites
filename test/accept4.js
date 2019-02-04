@@ -35,7 +35,7 @@ function all(stream, cb) {
 
 var caps = {
   sign: crypto.randomBytes(32),//.toString('base64'),
-  userInvite: crypto.randomBytes(32),//.toString('base64'),
+  peerInvite: crypto.randomBytes(32),//.toString('base64'),
   shs: crypto.randomBytes(32),//.toString('base64'),
 }
 
@@ -56,7 +56,7 @@ var bob = createSbot({
 
 tape('create an invite', function (t) {
 
-  alice.userInvites.create({allowWithoutPubs: true}, function (err, _invite) {
+  alice.peerInvites.create({allowWithoutPubs: true}, function (err, _invite) {
     if(err) throw err
     var invite = u.parse(_invite)
     var seed = invite.seed
@@ -65,7 +65,7 @@ tape('create an invite', function (t) {
     //use device address, just for tests
     invite.pubs.push(alice.getAddress('device'))
 
-    bob.userInvites.openInvite(invite, function (err, invite_msg, data) {
+    bob.peerInvites.openInvite(invite, function (err, invite_msg, data) {
       if(err) throw err
       t.ok(invite)
       t.equal(toId(invite_msg), invite_id)
@@ -77,7 +77,7 @@ tape('create an invite', function (t) {
       bob.publish(accept_content, function (err, accept) {
         if(err) throw err
 
-        bob.userInvites.acceptInvite(invite, function (err, confirm) {
+        bob.peerInvites.acceptInvite(invite, function (err, confirm) {
           if(err) throw err
 
           //check that alice and bob both understand the other to be following them.
