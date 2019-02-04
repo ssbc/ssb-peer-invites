@@ -406,7 +406,7 @@ exports.init = function (sbot, config) {
   //TODO: check if invite is already held locally
   //      if so, just get it. when got, update local db.
   invites.openInvite = function (invite, cb) {
-    if(isString(invite)) invite = u.parseInvite(invite)
+    if(isString(invite)) invite = u.parse(invite)
     invites.getInvite(invite.invite, function (err, msg) {
       if(msg)
         next(msg)
@@ -438,7 +438,7 @@ exports.init = function (sbot, config) {
   }
 
   invites.acceptInvite = function (opts, cb) {
-    if(isString(opts)) opts = u.parseInvite(opts)
+    if(isString(opts)) opts = u.parse(opts)
     var invite = isObject(opts.invite) ? opts.invite : opts
     var invite_id = invite.invite
     var id = opts.id || sbot.id
