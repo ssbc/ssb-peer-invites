@@ -2,7 +2,6 @@ var crypto = require('crypto')
 var createClient = require('ssb-client')
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-var pull = require('pull-stream')
 
 var I = require('../valid')
 

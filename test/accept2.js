@@ -45,16 +45,9 @@ function toId(msg) {
 
 tape('create an invite', function (t) {
 
-  var seed = crypto.randomBytes(32)
-
-//  var content = I.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'})
-//  alice.publish(content, function (err, msg) {
-  //  I.verifyInvitePublic(msg.value)
-
   alice.peerInvites.create({allowWithoutPubs: true}, function (err, _invite) {
     if(err) throw err
     var invite = u.parse(_invite)
-    var seed = invite.seed
     var invite_id = invite.invite
 
     //use device address, just for tests

@@ -78,8 +78,10 @@ tape('create an invite', function (t) {
 
             //check that alice and bob both understand the other to be following them.
             bob.friends.hops({reverse: true}, function (err, hops) {
+              if(err) throw err
               t.equal(hops[alice.id], 1)
               alice.friends.hops({reverse: true}, function (err, hops) {
+                if(err) throw err
                 t.equal(hops[bob.id], 1)
                 alice.close()
                 bob.close()

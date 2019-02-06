@@ -16,8 +16,6 @@ tape('happy', function (t) {
 
   var seed = hash('seed1')
 
-  var tmp = ssbKeys.generate(null, seed)
-
   var invite_content = i.createInvite(seed, alice.id, {name: 'bob'}, {text: 'welcome to ssb!'}, caps)
 
   var msg = v.create(null, alice, caps.sign, invite_content, new Date('2018-03-14T06:14:18.377Z'))
@@ -43,8 +41,6 @@ tape('happy', function (t) {
 tape('happy 2, without private', function (t) {
 
   var seed = hash('seed2')
-
-  var tmp = ssbKeys.generate(null, seed)
 
   var invite_content = i.createInvite(seed, alice.id, {name: 'bob'}, null, caps)
 
@@ -74,8 +70,6 @@ tape('happy 3, without reveal', function (t) {
 
   var seed = hash('seed3')
 
-  var tmp = ssbKeys.generate(null, seed)
-
   var invite_content = i.createInvite(seed, alice.id, null, {name: 'bob'}, caps)
 
   var msg = v.create(null, alice, caps.sign, invite_content, new Date('2018-03-14T06:14:18.377Z'))
@@ -102,8 +96,6 @@ tape('happy 3, without reveal', function (t) {
 tape('happy 4, neither private or reveal', function (t) {
 
   var seed = hash('seed4')
-
-  var tmp = ssbKeys.generate(null, seed)
 
   var invite_content = i.createInvite(seed, alice.id, null, null, caps)
 

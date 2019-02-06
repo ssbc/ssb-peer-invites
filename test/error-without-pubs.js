@@ -30,14 +30,7 @@ var alice = createSbot({
   caps: caps
 })
 
-function toId(msg) {
-  return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
-}
-
 tape('create an invite', function (t) {
-
-  var seed = crypto.randomBytes(32)
-
   //without the pubs option, do not allow creating
   //an invite.
   alice.peerInvites.create({}, function (err, invite) {

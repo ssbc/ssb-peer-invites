@@ -43,11 +43,8 @@ var bob = createSbot({
   keys:ssbKeys.generate(),
   caps: caps
 })
-var carol = ssbKeys.generate()
 
 tape('create an invite', function (t) {
-
-  var seed = crypto.randomBytes(32)
 
   //in this test, we use a separate identity to create the invite,
   //to test multiple identity support, and also simulate confirmation by pub.
@@ -56,7 +53,6 @@ tape('create an invite', function (t) {
     alice.peerInvites.create({id: carol_id, allowWithoutPubs: true}, function (err, _invite) {
       if(err) throw err
       var invite = u.parse(_invite)
-      var seed = invite.seed
       var invite_id = invite.invite
 
       //use device address, just for tests
@@ -74,8 +70,10 @@ tape('create an invite', function (t) {
           t.equal(confirm.author, alice.id)
           //check that alice and bob both understand the other to be following them.
           bob.friends.hops({reverse: true}, function (err, hops) {
+            if(err) throw err
             t.equal(hops[carol_id], 1)
             alice.friends.hops({reverse: true, start: carol_id}, function (err, hops) {
+              if(err) throw err
               t.equal(hops[bob.id], 1)
               alice.close()
               bob.close()
