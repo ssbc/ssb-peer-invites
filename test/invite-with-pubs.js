@@ -4,10 +4,10 @@ var tape = require('tape')
 
 var u = require('../util')
 
-var createSbot = require('scuttlebot')
+var createSbot = require('ssb-server')
   .use(require('ssb-links'))
-  .use(require('scuttlebot/plugins/replicate'))
-  .use(require('scuttlebot/plugins/gossip'))
+  .use(require('ssb-replicate'))
+  .use(require('ssb-gossip'))
   .use(require('ssb-query'))
   .use(require('ssb-device-address'))
   .use(require('ssb-identities'))

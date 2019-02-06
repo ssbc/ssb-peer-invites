@@ -6,7 +6,7 @@ var pull = require('pull-stream')
 
 var I = require('../valid')
 
-var createSbot = require('scuttlebot')
+var createSbot = require('ssb-server')
   .use(require('ssb-links'))
   .use({
     name: 'replicate', version: '1.0.0',

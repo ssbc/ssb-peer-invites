@@ -20,9 +20,14 @@
   },
   "devDependencies": {
     "explain-error": "^1.0.4",
-    "scuttlebot": "^13.2.2",
     "ssb-device-address": "^1.1.2",
+    "ssb-friends": "^3.1.12",
+    "ssb-gossip": "^1.0.4",
     "ssb-identities": "^2.0.7",
+    "ssb-links": "^3.0.4",
+    "ssb-query": "^2.3.0",
+    "ssb-replicate": "^1.0.4",
+    "ssb-server": "^14.0.0",
     "ssb-validate": "^3.0.1",
     "tape": "^4.9.2"
   },

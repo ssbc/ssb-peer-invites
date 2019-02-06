@@ -8,7 +8,7 @@ var tape = require('tape')
 var pull = require('pull-stream')
 var ref = require('ssb-ref')
 
-var createSbot = require('scuttlebot')
+var createSbot = require('ssb-server')
   .use(require('ssb-links'))
   .use({
     name: 'replicate', version: '1.0.0',
