@@ -1,14 +1,10 @@
 var crypto = require('crypto')
 var I = require('../valid')
-var createClient = require('ssb-client')
 var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-//var explain = require('explain-error')
 var pull = require('pull-stream')
-//var u = require('../lib/util')
-var ref = require('ssb-ref')
 
 var createSbot = require('scuttlebot')
   .use(require('ssb-links'))
@@ -29,15 +25,7 @@ function toId(msg) {
   return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
 }
 
-function all(stream, cb) {
-  return pull(stream, pull.collect(cb))
-}
-
-var caps = {
-  sign: crypto.randomBytes(32),//.toString('base64'),
-  peerInvite: crypto.randomBytes(32),//.toString('base64'),
-  shs: crypto.randomBytes(32),//.toString('base64'),
-}
+var caps = require('./randcaps')()
 
 var alice = createSbot({
   temp: true,

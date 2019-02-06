@@ -4,20 +4,13 @@ var ssbKeys = require('ssb-keys')
 var v = require('ssb-validate')
 var i = require('../valid')
 var u = require('../util')
-var crypto = require('crypto')
-
-var invite_key = require('../cap')
 
 var hash = u.hash
 
 var alice = ssbKeys.generate(null, hash('ALICE'))
 var bob = ssbKeys.generate(null, hash('BOB'))
 
-var caps = {
-  sign: crypto.randomBytes(32),//.toString('base64'),
-  peerInvite: crypto.randomBytes(32),//.toString('base64'),
-  shs: crypto.randomBytes(32),//.toString('base64'),
-}
+var caps = require('./randcaps')()
 
 tape('happy', function (t) {
 
