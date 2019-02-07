@@ -53,7 +53,7 @@ tape('create an invite', function (t) {
     //use device address, just for tests
     invite.pubs.push(alice.getAddress('device'))
 
-    bob.peerInvites.openInvite(invite, function (err, invite_msg, data) {
+    bob.peerInvites.openInvite(u.stringify(invite), function (err, invite_msg, data) {
       if(err) throw err
       t.ok(invite)
       t.equal(toId(invite_msg), invite_id)
@@ -85,4 +85,7 @@ tape('create an invite', function (t) {
     })
   })
 })
+
+
+
 
