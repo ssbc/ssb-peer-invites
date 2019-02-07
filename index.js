@@ -9,6 +9,7 @@ var crypto     = require('crypto')
 var ssbKeys    = require('ssb-keys')
 var u          = require('./util')
 var cap        = require('./cap')
+var explain    = require('explain-error')
 
 function code(err, c) {
   err.code = 'peer-invites:'+c
@@ -398,7 +399,7 @@ exports.init = function (sbot, config) {
         } else {
           err = err || _err
         }
-        if(--n == 0) cb(err)
+        if(--n == 0) cb(explain(err, 'while trying to connect to:'+remote))
       })
     })
   }
