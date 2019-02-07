@@ -138,8 +138,11 @@ exports.init = function (sbot, config) {
     else {
       //interpret accepted invites as two-way, but only store a minimal host->guest data structure
       for(var j in invites.hosts)
-        for(var k in invites.hosts[j])
+        for(var k in invites.hosts[j]) {
+          g[j] = g[j] || {}
+          g[k] = g[k] || {}
           g[j][k] = g[k][j] = 1
+        }
       init = true
       layer(g)
     }
@@ -483,4 +486,5 @@ exports.init = function (sbot, config) {
 
 // I am not happy with how big this file is
 // but I can't see a really good line along which to break it up.
+
 
