@@ -234,18 +234,50 @@ with what alice says about him)
 
 ## messages
 
+because the trick here is two keys are associated,
+some particular techniques are used.
+
+#### double signatures
+
+notice a pattern with two keys and two signatures,
+the inner, short term key, signs the outer long term public key,
+and then the outer, long term key, signs the signed message
+of the short term key.
+
+```
+sign(sign({message, long_term.public}, short_term), long_term)
+```
+
+A key point here is that the inner signs the public key of the outer.
+Otherwise another party could just replay the inner portion,
+but by signing the long term key (and checking this when validating,
+this is prevented).
+
+#### signing capability
+
+the inner signatures uses [`ssbKeys.signObj(key, hmac_key?, obj)`](https://github.com/ssbc/ssb-keys#signobjkeys-hmac_key-obj)
+with an _`hmac_key`_ provided. The purpose of this is to ensure
+that this signature can never be confused with a signature used for
+other purposes (such as ordinary message signing).
+
 ### peer-invite
 
 published by the host when creating the invite.
 
 ``` js
 {
-  type: 'peer-invite',
-  host: author_id,  // author of this message.
-  invite: guest_temp_id, // public key guest will use to authenticate
-  reveal: boxed,    // encrypted message to be revealed (optional)
-  private: boxed,   // encrypted message for guest only (optional)
-  signature: sig, //signed by `guest_temp_id`, to prove that `author` held that.
+  previous: ...,
+  author: host_longterm_id,
+  ... //other required message fields
+  content {
+    type: 'peer-invite',
+    host: author_id,  // author of this message.
+    invite: guest_temp_id, // public key guest will use to authenticate
+    reveal: boxed,    // encrypted message to be revealed (optional)
+    private: boxed,   // encrypted message for guest only (optional)
+    signature: inner_sig, //signed by `guest_temp_id`, to prove that `author` held that.
+  },
+  signature: sig //signed by author.
 }
 ```
 
@@ -255,15 +287,23 @@ published by guest when accepting the above invite.
 
 ``` js
 {
-  type: 'peer-invite/accept',
-  receipt: invite_id,     // the id of the invite message (which is being accepted).
-  id: guest_long_term_id, // the real identity which the guest will use now.
-  key: hash(seed),        // key used to encrypt the `reveal` field. required if reveal was present.
-                          // if the guest does not wish to reveal that info, they should ask
-                          // their host to create another invite.
-  signature: sig          // signed by guest_temp_id, to prove that guest_long_term_id held that.
+  previous: ...,
+  author: guest_long_term_id,
+  ... //other required fields,
+  content: {
+    type: 'peer-invite/accept',
+    receipt: invite_id,     // the id of the invite message (which is being accepted).
+    id: guest_long_term_id, // the real identity which the guest will use now.
+    key: hash(seed),        // key used to encrypt the `reveal` field. required if reveal was present.
+                            // if the guest does not wish to reveal that info, they should ask
+                            // their host to create another invite.
+    signature: inner_sig    // signed by guest_temp_id, to prove that guest_long_term_id held that.
+  },
+  signature: outer_sig
 }
 ```
+
+a double signature is used as with the `peer-invite` message.
 
 ### peer-invite/confirm
 
@@ -280,6 +320,18 @@ it just embeds the accept_message.
 # License
 
 MIT
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
