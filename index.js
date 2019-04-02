@@ -46,7 +46,8 @@ exports.manifest = {
   willReplicate: 'async',
   getNearbyPubs: 'async',
   openInvite: 'async',
-  acceptInvite: 'async'
+  acceptInvite: 'async',
+  help: 'sync'
 }
 
 exports.permissions = {
@@ -132,17 +133,18 @@ exports.init = function (sbot, config) {
     return _invites
   })
 
-  invites.get(function (_, invites) {
+  invites.get(function (_, data) {
     var g = {}
-    if(!invites) layer({})
+    if(!data) layer({})
     else {
       //interpret accepted invites as two-way, but only store a minimal host->guest data structure
-      for(var j in invites.hosts)
-        for(var k in invites.hosts[j]) {
+      for(var j in data.hosts) {
+        for(var k in data.hosts[j]) {
           g[j] = g[j] || {}
           g[k] = g[k] || {}
           g[j][k] = g[k][j] = 1
         }
+      }
       init = true
       layer(g)
     }
@@ -479,6 +481,10 @@ exports.init = function (sbot, config) {
           })
       })
     }
+  }
+
+  invites.help = function () {
+    return require('./help')
   }
 
   return invites
