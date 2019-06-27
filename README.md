@@ -77,6 +77,21 @@ on their own feed (`type: 'peer-invite/accept'`), and then pass that to the pub,
 who then publishes a confirm message (`type: peer-invite/confirm'`).
 Now peers who replicate the pub's feed can see the guest has arrived.
 
+## invite format
+
+the invite format is as follows:
+
+```
+inv:{seed},{invite_msg_id},{cap?},{multiserver_address},...
+```
+
+This can be parsed using `require('ssb-peer-invites/util').parse`
+
+* `seed` is the private key that will be used to accept the invite, anyone who knows this can accept the invite, so do not share it publicaly.
+* `invite_msg_id` this is the id of the invite message. The guest requests this from the pub they connect to.
+* `cap` is the (optional) network cap for this invite.
+* `multiserver_address` one or more pub addresses
+
 ## api
 
 ### peerInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
@@ -99,8 +114,8 @@ example - be used to assign someone a name before they are invited.
 private can be used for the benefit of the guest. it may contain a welcome message
 or links to threads or channels, or peers to follow.
 
-on success, cb is called with `{invite: msgId, seed: seed, pubs: [addr,...]}`
-this information can be sent to the guest as the invite!
+on success, cb is called with an invite string, 
+this should be passed to the guest, who uses it with `openInvite` and `acceptInvite`
 
 ### peerInvites.openInvite(invite, cb(err, invite_msg, content)
 
@@ -320,27 +335,3 @@ it just embeds the accept_message.
 # License
 
 MIT
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
