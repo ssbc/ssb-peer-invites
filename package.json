@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "explain-error": "^1.0.4",
-    "ssb-device-address": "^1.1.2",
+    "ssb-device-address": "^1.1.6",
     "ssb-friends": "^3.1.12",
     "ssb-gossip": "^1.0.4",
     "ssb-identities": "^2.0.7",
