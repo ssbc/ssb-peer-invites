@@ -100,7 +100,7 @@ does everything needed to create an invite. generates a seed, finds pubs to act
 as introducers, and publishes an invite message.
 
 `id` is the host id to invite from. (optional, will use your default id if not provided).
-private and reveal are information thatis encrypted into the invite, except
+private and reveal are information that is encrypted into the invite, except
 that `private` is read only by the guest, but the key to `reveal` is published
 as the guest accepts the invite. (so it's eventually read by everyone, but only
 if the guest accepts the invite)
