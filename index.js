@@ -306,7 +306,7 @@ exports.init = function (sbot, config) {
 
         if(opts.offline) return cb(null, near)
 
-        var count = 3, found = []
+        var count = opts.min || 3, found = []
 
         function pushFound (pub, err, will) {
           found.push({
@@ -318,9 +318,7 @@ exports.init = function (sbot, config) {
           if(will) count --
           //sort in order of wether they will replicate,
           //or availability
-          found.sort(function (a, b) {
-            (!!b.willReplicate) - (!!a.willReplicate) || b.availability - a.availability
-          })
+          found = u.sort(found)
         }
 
         pull(
@@ -360,8 +358,13 @@ exports.init = function (sbot, config) {
 
     var host_id = opts.id || sbot.id
     invites.getNearbyPubs(opts, function (err, near) {
-      if(near.length == 0 && !opts.allowWithoutPubs)
-        return cb(new Error('failed to find any suitable pubs'))
+      if(!opts.allowWithoutPubs) {
+        near = near.filter(function (e) {
+          return e.willReplicate
+        }).slice(0, opts.max || 3)
+        if(near.length == 0)
+          return cb(new Error('failed to find any suitable pubs'))
+      }
 
       var seed = crypto.randomBytes(32).toString('base64')
       sbot.identities.publishAs({
@@ -492,5 +495,3 @@ exports.init = function (sbot, config) {
 
 // I am not happy with how big this file is
 // but I can't see a really good line along which to break it up.
-
-
