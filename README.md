@@ -132,6 +132,34 @@ calling openInvite will not publish a message, but may make a network connection
 accept the invite. this publishes a `peer-invite/accept` message locally,
 and then contacts a pub and asks them publish a `peer-invite/confirm` message.
 
+### peerInvites.getNearbyPubs(opts, cb)
+
+Get a list of nearby pubs, that may act as introducer to onboard the guest.
+to support `peer-invites` pubs must be running `ssb-device-address`
+and `ssb-peer-invites`, and be enough within your hop distance that they
+are happy to replicate someone you've invited. `create` uses this method
+internally, but it is provided for debugging purposes.
+
+supported options:
+* `hops` set the max hops of pubs to try. (defaults to 3
+* `min` connect to pubs until you've found at least this many who will replicate.
+
+The format of the result is:
+
+``` js
+[{
+  id: <pub_id>,
+  address: <multiserver_address>,
+  availability: <0-1>,
+  hops: N, //how far away they are
+  error: <null|message>, //if the connection failed
+  willReplicate: boolean, //true if they can handle this invite!
+},
+...
+]
+```
+results are sorted by wether they will replicate, and then by availability.
+
 ## example
 
 Alice wishes to invite Bob to her corner of the ssb
