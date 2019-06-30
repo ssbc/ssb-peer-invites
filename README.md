@@ -94,7 +94,7 @@ This can be parsed using `require('ssb-peer-invites/util').parse`
 
 ## api
 
-### peerInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
+### peerInvites.create({id?, public?, reveal?, hops?, pubs?, allowWithoutPubs?}, cb(err, invite))
 
 does everything needed to create an invite. generates a seed, finds pubs to act
 as introducers, and publishes an invite message.
@@ -116,6 +116,10 @@ or links to threads or channels, or peers to follow.
 
 on success, cb is called with an invite string, 
 this should be passed to the guest, who uses it with `openInvite` and `acceptInvite`
+
+If `allowWithoutPubs` is set, the invite will be created without finding any pubs.
+if `pubs` is provided this will be used the invite's pubs. `pubs` should be a array
+of multiserver addresses.
 
 ### peerInvites.openInvite(invite, cb(err, invite_msg, content)
 
