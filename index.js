@@ -441,7 +441,7 @@ exports.init = function (sbot, config) {
         var invite_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
         if(invite.invite !== invite_id)
           return cb(new Error(
-            'incorrect invite was returned! expected:'+invite.invite+', but got:'+inviteId
+            'incorrect invite was returned! expected:'+invite.invite+', but got:'+invite_id
           ))
         var opened
         try { opened = I.verifyInvitePrivate(msg, invite.seed, caps) }
