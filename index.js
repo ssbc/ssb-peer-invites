@@ -357,15 +357,22 @@ exports.init = function (sbot, config) {
       return opts(new Error ('peer-invites: expected: options *must* be provided.'))
 
     var host_id = opts.id || sbot.id
-    invites.getNearbyPubs(opts, function (err, near) {
-      if(!opts.allowWithoutPubs) {
+    if(opts.allowWithoutPubs) {
+      var pubs = opts.pubs
+      pubs = Array.isArray(pubs) ? pubs : 'string' == typeof pubs ? pubs.split(',') : []
+      create(pubs)
+    }
+    else
+      invites.getNearbyPubs(opts, function (err, near) {
         near = near.filter(function (e) {
           return e.willReplicate
         }).slice(0, opts.max || 3)
         if(near.length == 0)
           return cb(new Error('failed to find any suitable pubs'))
-      }
+        create(near.map(function (e) { return e.address }))
+      })
 
+    function create(pubs) {
       var seed = crypto.randomBytes(32).toString('base64')
       sbot.identities.publishAs({
         id: host_id,
@@ -376,18 +383,20 @@ exports.init = function (sbot, config) {
           seed: seed,
           invite: data.key,
           cap: opts.cap,
-          pubs: near.map(function (e) { return e.address }),
+          pubs: pubs,
         }
         cb(null, u.stringify(invite))
       })
-    })
+    }
   }
 
   //try each of an array of addresses, and cb the first one that works.
   function connectFirst (invite, cb) {
     var n = 0, err
     var keys = ssbKeys.generate(null, toBuffer(invite.seed))
-    invite.pubs.forEach(function (addr) {
+    var pubs = invite.pubs.filter(Boolean)
+    if(!pubs.length) return cb(new Error('peer-invites: invite missing pub addresses'))
+    pubs.forEach(function (addr) {
       n++
       //don't use sbot.connect here, because we are connecting
       //with a different cap.
@@ -407,7 +416,7 @@ exports.init = function (sbot, config) {
         } else {
           err = err || _err
         }
-        if(--n == 0) cb(explain(err, 'while trying to connect to:'+remote))
+        if(--n == 0) cb(explain(err, 'while trying to connect to:'+addr))
       })
     })
   }
