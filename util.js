@@ -47,3 +47,9 @@ exports.stringify = function (invite) {
     .join(',')
 }
 
+exports.sort = function (found) {
+  return found.sort(function (a, b) {
+    console.log([a.willReplicate, b.willReplicate], (!!a.willReplicate) - (!!b.willReplicate), b.availability - a.availability);
+    return (!!b.willReplicate) - (!!a.willReplicate) || (b.availability - a.availability)
+  })
+}
