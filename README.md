@@ -121,7 +121,7 @@ If `allowWithoutPubs` is set, the invite will be created without finding any pub
 if `pubs` is provided this will be used the invite's pubs. `pubs` should be a array
 of multiserver addresses.
 
-### peerInvites.openInvite(invite, cb(err, invite_msg, content)
+### peerInvites.openInvite(invite, cb(err, data))
 
 "open" an invite. retrives the invite message created by the host (using `peerInvites.create`)
 and decrypt any encrypted values. since the invite may contain a welcome message, etc,
@@ -130,6 +130,18 @@ firstly opening the invite, then accepting (on peer confirmation)
 
 calling openInvite will not publish a message, but may make a network connection
 (if you do not already possess the `invite_msg` which you won't the first time)
+
+the if the invite validated, the data argument is provided.
+```
+data = {
+  key: invite_id, //id of the invite message
+  value: invite_msg, //the raw invite message itself
+  opened: {
+    private: ..., //private message from host (may be null)
+    reveal: ... //message to be revealed from host (may be null)
+  }
+}
+```
 
 ### peerInvites.acceptInvite(invite, cb)
 
