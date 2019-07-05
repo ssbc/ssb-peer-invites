@@ -450,7 +450,11 @@ exports.init = function (sbot, config) {
         // this is a wee bit naughty, because if you rebuild the index it might not have this invite
         // (until you replicate it, but when you do the value won't change)
         state.set(reduce(state.value, {key: invite_id, value:msg}, invites.since.value))
-        cb(null, msg, opened)
+        cb(null, {
+          key: invite_id,
+          value: msg,
+          opened: opened
+        })
       }
     })
   }
@@ -466,7 +470,10 @@ exports.init = function (sbot, config) {
     getAccept(invite_id, function (err, accept) {
       if(accept) next(accept)
       else {
-        invites.openInvite(invite, function (err, invite_msg, opened) {
+        invites.openInvite(invite, function (err, data) {
+          if(err) return cb(err)
+          var invite_msg = data.value
+          var opened = data.opened
           sbot.identities.publishAs({
             id: id,
             content: I.createAccept(invite_msg, invite.seed, id, caps)
