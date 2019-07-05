@@ -36,7 +36,6 @@ var bob = createSbot({
   keys:ssbKeys.generate(),
   caps: caps
 })
-console.log(alice, bob)
 
 function toId(msg) {
   return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
