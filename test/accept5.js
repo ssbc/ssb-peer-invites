@@ -1,10 +1,8 @@
-var crypto = require('crypto')
 var I = require('../valid')
 var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-var pull = require('pull-stream')
 
 var createSbot = require('ssb-server')
   .use(require('ssb-links'))
@@ -42,7 +40,7 @@ var bob = createSbot({
   caps: caps
 })
 
-tape('create an invite', function (t) {
+tape('create an invite (accept5)', function (t) {
 
   alice.peerInvites.create({allowWithoutPubs: true}, function (err, _invite) {
     if(err) throw err

@@ -1,12 +1,9 @@
 //WARNING: this test currently only passes
 //if the computer has a network.
-var crypto = require('crypto')
 var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-var pull = require('pull-stream')
-var ref = require('ssb-ref')
 
 var createSbot = require('ssb-server')
   .use(require('ssb-links'))
@@ -44,7 +41,7 @@ var bob = createSbot({
   caps: caps
 })
 
-tape('create an invite', function (t) {
+tape('create an invite (accept3)', function (t) {
 
   //in this test, we use a separate identity to create the invite,
   //to test multiple identity support, and also simulate confirmation by pub.

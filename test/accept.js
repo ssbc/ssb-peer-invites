@@ -34,7 +34,7 @@ var bob = createSbot({
   caps: caps
 })
 
-tape('create an invite', function (t) {
+tape('create an invite (accept)', function (t) {
 
   var seed = crypto.randomBytes(32)
 

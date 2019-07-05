@@ -1,11 +1,9 @@
 //WARNING: this test currently only passes
 //if the computer has a network.
-var crypto = require('crypto')
 var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-var pull = require('pull-stream')
 
 var createSbot = require('ssb-server')
   .use(require('ssb-links'))
@@ -38,12 +36,13 @@ var bob = createSbot({
   keys:ssbKeys.generate(),
   caps: caps
 })
+console.log(alice, bob)
 
 function toId(msg) {
   return '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
 }
 
-tape('create an invite', function (t) {
+tape('create an invite (accept2)', function (t) {
 
   alice.peerInvites.create({allowWithoutPubs: true}, function (err, _invite) {
     if(err) throw err
