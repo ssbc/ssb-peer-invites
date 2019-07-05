@@ -113,9 +113,9 @@ tape('accept invite', function (t) {
     if(err) throw err
     t.deepEqual(invite.pubs, [carol.getAddress('device')])
     
-    bob.peerInvites.openInvite(invite, function (err, _invite_msg) {
+    bob.peerInvites.openInvite(invite, function (err, data) {
       if(err) throw explain(err, 'error while opening invite')
-      t.deepEqual(_invite_msg, invite_msg)
+      t.deepEqual(data.value, invite_msg)
       bob.peerInvites.acceptInvite(invite, function (err) {
         if(err) throw err
         t.end()
@@ -136,6 +136,3 @@ tape('cleanup', function (t) {
     t.end()
   }, 1000)
 })
-
-
-

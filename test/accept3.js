@@ -55,12 +55,14 @@ tape('create an invite (accept3)', function (t) {
       //use device address, just for tests
       invite.pubs.push(alice.getAddress('device'))
 
-      bob.peerInvites.openInvite(invite, function (err, invite_msg, data) {
+      bob.peerInvites.openInvite(invite, function (err, data) {
         if(err) throw err
+        var invite_msg = data.value
+        var opened = data.opened
         t.ok(invite)
         t.equal(invite_msg.author, carol_id)
         t.equal(toId(invite_msg), invite_id)
-        t.deepEqual(data, {reveal: undefined, private: undefined})
+        t.deepEqual(opened, {reveal: undefined, private: undefined})
         //check this invite is valid. would throw if it wasn't.
         bob.peerInvites.acceptInvite(invite, function (err, confirm) {
           if(err) throw err
@@ -82,4 +84,3 @@ tape('create an invite (accept3)', function (t) {
     })
   })
 })
-

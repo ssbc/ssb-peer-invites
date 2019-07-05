@@ -51,11 +51,13 @@ tape('create an invite (accept4)', function (t) {
     //use device address, just for tests
     invite.pubs.push(alice.getAddress('device'))
 
-    bob.peerInvites.openInvite(u.stringify(invite), function (err, invite_msg, data) {
+    bob.peerInvites.openInvite(u.stringify(invite), function (err, data) {
       if(err) throw err
+      var invite_msg = data.value
+      var opened = data.opened
       t.ok(invite)
       t.equal(toId(invite_msg), invite_id)
-      t.deepEqual(data, {reveal: undefined, private: undefined})
+      t.deepEqual(opened, {reveal: undefined, private: undefined})
 
       //bob publishes accept_content manually. simulates that he crashed
       //before causing confirm.
@@ -83,7 +85,3 @@ tape('create an invite (accept4)', function (t) {
     })
   })
 })
-
-
-
-
