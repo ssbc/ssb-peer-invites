@@ -502,21 +502,23 @@ exports.init = function (sbot, config) {
             //TODO: store confirms for us in the state.
             if (err) return cb(err)
 
-            const addr = invite.pubs
-              .filter(Boolean)
-              .find(pubAddress => pubAddress.indexOf(accept.author) > -1)
-            //mix: this logic should be extracted
-
-            if (!addr) {
-              console.log(invite.pubs)
-              console.log(accept)
-              return cb(new Error('ssb-peer-invites could not find address of accepting pub'))
-            }
-
-            sbot.gossip.connect(addr, function (err) {
-              if (err) cb(new Error('ssb-peer-invite failed to connect to', addr))
-              else cb(null, confirm)
-            })
+            pull(
+              invite.pubs,
+              paramap(
+                function (addr, cb) {
+                  sbot.gossip.connect(addr, function (err, something) {
+                    if (err) cb(false)
+                    else cb(true)
+                  })
+                },
+                3
+              ),
+              pull.filter(Boolean),
+              pull.collect(function (_, results) {
+                if (results.length === 0) cb(new Error('ssb-peer-invite failed to connect to any pubs'))
+                else cb(null, confirm)
+              })
+            )
           })
         })
       })
