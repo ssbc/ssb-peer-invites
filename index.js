@@ -490,14 +490,31 @@ exports.init = function (sbot, config) {
 
     function next(accept) {
       getConfirm(invite_id, accept, function (err, confirm) {
-        if(!confirm)
-          connectFirst(invite, function (err, rpc) {
-            if(err) return cb(err)
-            rpc.peerInvites.confirm(accept, function (err, confirm) {
-              //TODO: store confirms for us in the state.
-              cb(err, confirm)
+        if (err) return cb(err)
+        if(confirm) {
+          console.error('ssb-peer-invites: Invite already confirmed')
+          return // mix: send something else back in cb for client side?
+        }
+
+        connectFirst(invite, function (err, rpc) {
+          if(err) return cb(err)
+          rpc.peerInvites.confirm(accept, function (err, confirm) {
+            //TODO: store confirms for us in the state.
+            if (err) return cb(err)
+
+            const addr = invite.pubs
+              .filter(Boolean)
+              .find(pubAddress => pubAddress.indexOf(accept.author) > -1)
+            //mix: this logic should be extracted
+
+            if (!addr) return cb(new Error('ssb-peer-invites could not find address of accepting pub'))
+
+            sbot.gossip.connect(addr, function (err) {
+              if (err) cb(new Error('ssb-peer-invite failed to connect to', addr))
+              else cb(null, confirm)
             })
           })
+        })
       })
     }
   }
