@@ -1,5 +1,6 @@
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
+var u = require('../util')
 
 var createSbot = require('ssb-server')
   .use(require('ssb-links'))
@@ -63,6 +64,15 @@ tape("bob won't replicate alice's guests", function (t) {
       t.end()
     })
   })
+})
+
+var nearby = require('./nearby.json')
+tape('sort', function (t) {
+  var sorted = u.sort(nearby)
+  t.ok(sorted[0].willReplicate)
+  t.ok(sorted[1].willReplicate)
+  console.log(sorted)
+  t.end()
 })
 
 tape('clean up', function (t) {

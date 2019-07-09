@@ -1,10 +1,8 @@
-var crypto = require('crypto')
 var I = require('../valid')
 var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-var pull = require('pull-stream')
 
 var createSbot = require('ssb-server')
   .use(require('ssb-links'))
@@ -42,7 +40,7 @@ var bob = createSbot({
   caps: caps
 })
 
-tape('create an invite', function (t) {
+tape('create an invite (accept5)', function (t) {
 
   alice.peerInvites.create({allowWithoutPubs: true}, function (err, _invite) {
     if(err) throw err
@@ -52,12 +50,14 @@ tape('create an invite', function (t) {
 
     //use device address, just for tests
     invite.pubs.push(alice.getAddress('device'))
+    t.ok(invite)
 
-    bob.peerInvites.openInvite(u.stringify(invite), function (err, invite_msg, data) {
+    bob.peerInvites.openInvite(u.stringify(invite), function (err, data) {
       if(err) throw err
-      t.ok(invite)
+      var invite_msg = data.value
+      var opened = data.opened
       t.equal(toId(invite_msg), invite_id)
-      t.deepEqual(data, {reveal: undefined, private: undefined})
+      t.deepEqual(opened, {reveal: undefined, private: undefined})
 
       //bob publishes accept_content manually. simulates that he crashed
       //before causing confirm.
@@ -94,4 +94,3 @@ tape('create an invite', function (t) {
     })
   })
 })
-

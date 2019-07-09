@@ -77,15 +77,30 @@ on their own feed (`type: 'peer-invite/accept'`), and then pass that to the pub,
 who then publishes a confirm message (`type: peer-invite/confirm'`).
 Now peers who replicate the pub's feed can see the guest has arrived.
 
+## invite format
+
+the invite format is as follows:
+
+```
+inv:{seed},{invite_msg_id},{cap?},{multiserver_address},...
+```
+
+This can be parsed using `require('ssb-peer-invites/util').parse`
+
+* `seed` is the private key that will be used to accept the invite, anyone who knows this can accept the invite, so do not share it publicaly.
+* `invite_msg_id` this is the id of the invite message. The guest requests this from the pub they connect to.
+* `cap` is the (optional) network cap for this invite.
+* `multiserver_address` one or more pub addresses
+
 ## api
 
-### peerInvites.create({id?, public?, reveal?, hops?}, cb(err, invite))
+### peerInvites.create({id?, public?, reveal?, hops?, pubs?, allowWithoutPubs?}, cb(err, invite))
 
 does everything needed to create an invite. generates a seed, finds pubs to act
 as introducers, and publishes an invite message.
 
 `id` is the host id to invite from. (optional, will use your default id if not provided).
-private and reveal are information thatis encrypted into the invite, except
+private and reveal are information that is encrypted into the invite, except
 that `private` is read only by the guest, but the key to `reveal` is published
 as the guest accepts the invite. (so it's eventually read by everyone, but only
 if the guest accepts the invite)
@@ -99,10 +114,14 @@ example - be used to assign someone a name before they are invited.
 private can be used for the benefit of the guest. it may contain a welcome message
 or links to threads or channels, or peers to follow.
 
-on success, cb is called with `{invite: msgId, seed: seed, pubs: [addr,...]}`
-this information can be sent to the guest as the invite!
+on success, cb is called with an invite string, 
+this should be passed to the guest, who uses it with `openInvite` and `acceptInvite`
 
-### peerInvites.openInvite(invite, cb(err, invite_msg, content)
+If `allowWithoutPubs` is set, the invite will be created without finding any pubs.
+if `pubs` is provided this will be used the invite's pubs. `pubs` should be a array
+of multiserver addresses.
+
+### peerInvites.openInvite(invite, cb(err, data))
 
 "open" an invite. retrives the invite message created by the host (using `peerInvites.create`)
 and decrypt any encrypted values. since the invite may contain a welcome message, etc,
@@ -112,10 +131,50 @@ firstly opening the invite, then accepting (on peer confirmation)
 calling openInvite will not publish a message, but may make a network connection
 (if you do not already possess the `invite_msg` which you won't the first time)
 
+the if the invite validated, the data argument is provided.
+```
+data = {
+  key: invite_id, //id of the invite message
+  value: invite_msg, //the raw invite message itself
+  opened: {
+    private: ..., //private message from host (may be null)
+    reveal: ... //message to be revealed from host (may be null)
+  }
+}
+```
+
 ### peerInvites.acceptInvite(invite, cb)
 
 accept the invite. this publishes a `peer-invite/accept` message locally,
 and then contacts a pub and asks them publish a `peer-invite/confirm` message.
+
+### peerInvites.getNearbyPubs(opts, cb)
+
+Get a list of nearby pubs, that may act as introducer to onboard the guest.
+to support `peer-invites` pubs must be running `ssb-device-address`
+and `ssb-peer-invites`, and be enough within your hop distance that they
+are happy to replicate someone you've invited. `create` uses this method
+internally, but it is provided for debugging purposes.
+
+supported options:
+* `hops` set the max hops of pubs to try. (defaults to 3
+* `min` connect to pubs until you've found at least this many who will replicate.
+
+The format of the result is:
+
+``` js
+[{
+  id: <pub_id>,
+  address: <multiserver_address>,
+  availability: <0-1>,
+  hops: N, //how far away they are
+  error: <null|message>, //if the connection failed
+  willReplicate: boolean, //true if they can handle this invite!
+},
+...
+]
+```
+results are sorted by wether they will replicate, and then by availability.
 
 ## example
 
@@ -320,27 +379,3 @@ it just embeds the accept_message.
 # License
 
 MIT
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

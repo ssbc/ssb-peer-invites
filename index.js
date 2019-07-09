@@ -46,7 +46,8 @@ exports.manifest = {
   willReplicate: 'async',
   getNearbyPubs: 'async',
   openInvite: 'async',
-  acceptInvite: 'async'
+  acceptInvite: 'async',
+  help: 'sync'
 }
 
 exports.permissions = {
@@ -132,17 +133,18 @@ exports.init = function (sbot, config) {
     return _invites
   })
 
-  invites.get(function (_, invites) {
+  invites.get(function (_, data) {
     var g = {}
-    if(!invites) layer({})
+    if(!data) layer({})
     else {
       //interpret accepted invites as two-way, but only store a minimal host->guest data structure
-      for(var j in invites.hosts)
-        for(var k in invites.hosts[j]) {
+      for(var j in data.hosts) {
+        for(var k in data.hosts[j]) {
           g[j] = g[j] || {}
           g[k] = g[k] || {}
           g[j][k] = g[k][j] = 1
         }
+      }
       init = true
       layer(g)
     }
@@ -304,7 +306,7 @@ exports.init = function (sbot, config) {
 
         if(opts.offline) return cb(null, near)
 
-        var count = 3, found = []
+        var count = opts.min || 3, found = []
 
         function pushFound (pub, err, will) {
           found.push({
@@ -316,9 +318,7 @@ exports.init = function (sbot, config) {
           if(will) count --
           //sort in order of wether they will replicate,
           //or availability
-          found.sort(function (a, b) {
-            (!!b.willReplicate) - (!!a.willReplicate) || b.availability - a.availability
-          })
+          found = u.sort(found)
         }
 
         pull(
@@ -357,10 +357,22 @@ exports.init = function (sbot, config) {
       return opts(new Error ('peer-invites: expected: options *must* be provided.'))
 
     var host_id = opts.id || sbot.id
-    invites.getNearbyPubs(opts, function (err, near) {
-      if(near.length == 0 && !opts.allowWithoutPubs)
-        return cb(new Error('failed to find any suitable pubs'))
+    if(opts.allowWithoutPubs) {
+      var pubs = opts.pubs
+      pubs = Array.isArray(pubs) ? pubs : 'string' == typeof pubs ? pubs.split(',') : []
+      create(pubs)
+    }
+    else
+      invites.getNearbyPubs(opts, function (err, near) {
+        near = near.filter(function (e) {
+          return e.willReplicate
+        }).slice(0, opts.max || 3)
+        if(near.length == 0)
+          return cb(new Error('failed to find any suitable pubs'))
+        create(near.map(function (e) { return e.address }))
+      })
 
+    function create(pubs) {
       var seed = crypto.randomBytes(32).toString('base64')
       sbot.identities.publishAs({
         id: host_id,
@@ -371,18 +383,20 @@ exports.init = function (sbot, config) {
           seed: seed,
           invite: data.key,
           cap: opts.cap,
-          pubs: near.map(function (e) { return e.address }),
+          pubs: pubs,
         }
         cb(null, u.stringify(invite))
       })
-    })
+    }
   }
 
   //try each of an array of addresses, and cb the first one that works.
   function connectFirst (invite, cb) {
     var n = 0, err
     var keys = ssbKeys.generate(null, toBuffer(invite.seed))
-    invite.pubs.forEach(function (addr) {
+    var pubs = invite.pubs.filter(Boolean)
+    if(!pubs.length) return cb(new Error('peer-invites: invite missing pub addresses'))
+    pubs.forEach(function (addr) {
       n++
       //don't use sbot.connect here, because we are connecting
       //with a different cap.
@@ -402,7 +416,7 @@ exports.init = function (sbot, config) {
         } else {
           err = err || _err
         }
-        if(--n == 0) cb(explain(err, 'while trying to connect to:'+remote))
+        if(--n == 0) cb(explain(err, 'while trying to connect to:'+addr))
       })
     })
   }
@@ -427,7 +441,7 @@ exports.init = function (sbot, config) {
         var invite_id = '%'+ssbKeys.hash(JSON.stringify(msg, null, 2))
         if(invite.invite !== invite_id)
           return cb(new Error(
-            'incorrect invite was returned! expected:'+invite.invite+', but got:'+inviteId
+            'incorrect invite was returned! expected:'+invite.invite+', but got:'+invite_id
           ))
         var opened
         try { opened = I.verifyInvitePrivate(msg, invite.seed, caps) }
@@ -436,7 +450,11 @@ exports.init = function (sbot, config) {
         // this is a wee bit naughty, because if you rebuild the index it might not have this invite
         // (until you replicate it, but when you do the value won't change)
         state.set(reduce(state.value, {key: invite_id, value:msg}, invites.since.value))
-        cb(null, msg, opened)
+        cb(null, {
+          key: invite_id,
+          value: msg,
+          opened: opened
+        })
       }
     })
   }
@@ -452,7 +470,10 @@ exports.init = function (sbot, config) {
     getAccept(invite_id, function (err, accept) {
       if(accept) next(accept)
       else {
-        invites.openInvite(invite, function (err, invite_msg, opened) {
+        invites.openInvite(invite, function (err, data) {
+          if(err) return cb(err)
+          var invite_msg = data.value
+          var opened = data.opened
           sbot.identities.publishAs({
             id: id,
             content: I.createAccept(invite_msg, invite.seed, id, caps)
@@ -481,10 +502,12 @@ exports.init = function (sbot, config) {
     }
   }
 
+  invites.help = function () {
+    return require('./help')
+  }
+
   return invites
 }
 
 // I am not happy with how big this file is
 // but I can't see a really good line along which to break it up.
-
-

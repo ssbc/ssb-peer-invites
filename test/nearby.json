@@ -1,0 +1,66 @@
+[
+  {
+    "id": "@lbocEWqF2Fg6WMYLgmfYvqJlMfL7hiqVAV6ANjHWNw8=.ed25519",
+    "address": "onion:4fqstkswahy3n7mupr2gvvp2qcsp6juwzn3mnqvhkaixxepvxrrtfbid.onion:8008~shs:lbocEWqF2Fg6WMYLgmfYvqJlMfL7hiqVAV6ANjHWNw8=",
+    "availability": 1,
+    "hops": 2,
+    "error": "connect ECONNREFUSED 127.0.0.1:9150",
+    "willReplicate": false
+  },
+  {
+    "id": "@DTNmX+4SjsgZ7xyDh5xxmNtFqa6pWi5Qtw7cE8aR9TQ=.ed25519",
+    "address": "net:128.199.132.182:8008~shs:DTNmX+4SjsgZ7xyDh5xxmNtFqa6pWi5Qtw7cE8aR9TQ=;ws://128.199.132.182:9009~shs:DTNmX+4SjsgZ7xyDh5xxmNtFqa6pWi5Qtw7cE8aR9TQ=",
+    "availability": 1,
+    "hops": 1,
+    "error": null,
+    "willReplicate": true
+  },
+  {
+    "id": "@WndnBREUvtFVF14XYEq01icpt91753bA+nVycEJIAX4=.ed25519",
+    "address": "net:pub.t4l3.net:8008~shs:WndnBREUvtFVF14XYEq01icpt91753bA+nVycEJIAX4=",
+    "availability": 1,
+    "hops": 2,
+    "error": "connect ECONNREFUSED 173.249.55.204:8008",
+    "willReplicate": false
+  },
+  {
+    "id": "@5XaVcAJ5DklwuuIkjGz4lwm2rOnMHHovhNg7BFFnyJ8=.ed25519",
+    "address": "net:ssb.celehner.com:8008~shs:5XaVcAJ5DklwuuIkjGz4lwm2rOnMHHovhNg7BFFnyJ8=",
+    "availability": 1,
+    "hops": 2,
+    "error": null,
+    "willReplicate": true
+  },
+  {
+    "id": "@N7jw0alZkW7Id+vLUjcf0Zs/xwff8z4BT6bCpq99EKw=.ed25519",
+    "address": "net:fc2d:4733:219f:c0dc:8809:1bb9:e1ab:2f94~shs:N7jw0alZkW7Id+vLUjcf0Zs/xwff8z4BT6bCpq99EKw=",
+    "availability": 0.5,
+    "hops": 2,
+    "error": "could not connect to:net:fc2d:4733:219f:c0dc:8809:1bb9:e1ab:2f94~shs:N7jw0alZkW7Id+vLUjcf0Zs/xwff8z4BT6bCpq99EKw=, only know:net~shs;onion~shs",
+    "willReplicate": false
+  },
+  {
+    "id": "@uOReuhnb9+mPi5RnTbKMKRr3r87cK+aOg8lFXV/SBPU=.ed25519",
+    "address": "net:fc4c:743b:691e:c2aa:276e:d214:d557:3055~shs:uOReuhnb9+mPi5RnTbKMKRr3r87cK+aOg8lFXV/SBPU=",
+    "availability": 0.7,
+    "hops": 2,
+    "error": "getaddrinfo ENOTFOUND fc4c:743b:691e:c2aa:276e:d214:d557 fc4c:743b:691e:c2aa:276e:d214:d557:3055",
+    "willReplicate": false
+  },
+  {
+    "id": "@uMiN0TRVMGVNTQUb6KCbiOi/8UQYcyojiA83rCghxGo=.ed25519",
+    "address": "net:ssb.learningsocieties.org:8008~shs:uMiN0TRVMGVNTQUb6KCbiOi/8UQYcyojiA83rCghxGo=",
+    "availability": 0.9,
+    "hops": 2,
+    "error": "connect ECONNREFUSED 188.166.52.34:8008",
+    "willReplicate": false
+  },
+  {
+    "id": "@GPz52umhSy9c4Qu7jBLd9mDOysvxyy3TcjzUzsaZHVA=.ed25519",
+    "address": "net:pub.scuttlebuttchess.co.uk:8008~shs:GPz52umhSy9c4Qu7jBLd9mDOysvxyy3TcjzUzsaZHVA=",
+    "availability": 0.3,
+    "hops": 2,
+    "error": "method:peerInvites,willReplicate is not in list of allowed methods",
+    "willReplicate": false
+  }
+]

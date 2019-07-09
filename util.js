@@ -1,12 +1,12 @@
 var chloride = require('chloride')
 
-function box (data, key) {
+exports.box = function box (data, key) {
   if(!data) return
   var b = Buffer.from(JSON.stringify(data))
   return chloride.crypto_secretbox_easy(b, key.slice(0, 24), key).toString('base64')
 }
 
-function unbox (ctxt, key) {
+exports.unbox = function unbox (ctxt, key) {
   var b = Buffer.from(ctxt, 'base64')
   var ptxt = chloride.crypto_secretbox_open_easy(b, key.slice(0, 24), key)
   if(!ptxt) return
@@ -17,17 +17,13 @@ function unbox (ctxt, key) {
   }
 }
 
-
-function hash(s) {
+exports.hash = function hash (s) {
   return chloride.crypto_hash_sha256(
-    'string' == typeof s ? Buffer.from(s, 'utf8') : s
+    'string' === typeof s ? Buffer.from(s, 'utf8') : s
   )
 }
 
-exports.hash = hash
-exports.box = box
-exports.unbox = unbox
-exports.parse = function (str) {
+exports.parse = function parse (str) {
   if(!/^inv\:/.test(str)) throw new Error('invites must start with "inv:", got '+JSON.stringify(str))
   var ary = str.substring(4).split(',')
   return {
@@ -37,7 +33,7 @@ exports.parse = function (str) {
     pubs: ary.slice(3)
   }
 }
-exports.stringify = function (invite) {
+exports.stringify = function stringify (invite) {
   return 'inv:'+[
       invite.seed,
       invite.invite,
@@ -47,3 +43,8 @@ exports.stringify = function (invite) {
     .join(',')
 }
 
+exports.sort = function sort (found) {
+  return found.sort(function (a, b) {
+    return (!!b.willReplicate) - (!!a.willReplicate) || (b.availability - a.availability)
+  })
+}

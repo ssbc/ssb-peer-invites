@@ -1,12 +1,9 @@
 //WARNING: this test currently only passes
 //if the computer has a network.
-var crypto = require('crypto')
 var u = require('../util')
 
 var ssbKeys = require('ssb-keys')
 var tape = require('tape')
-var pull = require('pull-stream')
-var ref = require('ssb-ref')
 
 var createSbot = require('ssb-server')
   .use(require('ssb-links'))
@@ -44,7 +41,7 @@ var bob = createSbot({
   caps: caps
 })
 
-tape('create an invite', function (t) {
+tape('create an invite (accept3)', function (t) {
 
   //in this test, we use a separate identity to create the invite,
   //to test multiple identity support, and also simulate confirmation by pub.
@@ -58,12 +55,14 @@ tape('create an invite', function (t) {
       //use device address, just for tests
       invite.pubs.push(alice.getAddress('device'))
 
-      bob.peerInvites.openInvite(invite, function (err, invite_msg, data) {
+      bob.peerInvites.openInvite(invite, function (err, data) {
         if(err) throw err
+        var invite_msg = data.value
+        var opened = data.opened
         t.ok(invite)
         t.equal(invite_msg.author, carol_id)
         t.equal(toId(invite_msg), invite_id)
-        t.deepEqual(data, {reveal: undefined, private: undefined})
+        t.deepEqual(opened, {reveal: undefined, private: undefined})
         //check this invite is valid. would throw if it wasn't.
         bob.peerInvites.acceptInvite(invite, function (err, confirm) {
           if(err) throw err
@@ -85,4 +84,3 @@ tape('create an invite', function (t) {
     })
   })
 })
-

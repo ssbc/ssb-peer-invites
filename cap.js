@@ -1,11 +1,4 @@
-var chloride = require('chloride')
+var u = require('./util.js')
 
-function hash(s) {
-  return chloride.crypto_hash_sha256(
-    'string' == typeof s ? Buffer.from(s, 'utf8') : s
-  )
-}
-
-module.exports =  hash("peer-invites:DEVELOPMENT") //XXX DON'T publish without fixing this!
-
-// TODO
+//todo: get this from ssb-caps@1.1 instead
+module.exports = u.hash('peer-invites').toString('base64')
