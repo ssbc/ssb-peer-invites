@@ -507,7 +507,11 @@ exports.init = function (sbot, config) {
               .find(pubAddress => pubAddress.indexOf(accept.author) > -1)
             //mix: this logic should be extracted
 
-            if (!addr) return cb(new Error('ssb-peer-invites could not find address of accepting pub'))
+            if (!addr) {
+              console.log(invite.pubs)
+              console.log(accept)
+              return cb(new Error('ssb-peer-invites could not find address of accepting pub'))
+            }
 
             sbot.gossip.connect(addr, function (err) {
               if (err) cb(new Error('ssb-peer-invite failed to connect to', addr))
