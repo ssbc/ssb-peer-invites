@@ -493,7 +493,7 @@ exports.init = function (sbot, config) {
         if (err) return cb(err)
         if(confirm) {
           console.error('ssb-peer-invites: Invite already confirmed')
-          return // mix: send something else back in cb for client side?
+          return cb(new Error('ssb-peer-invites: Invite already confirmed'))
         }
 
         connectFirst(invite, function (err, rpc) {
@@ -503,19 +503,19 @@ exports.init = function (sbot, config) {
             if (err) return cb(err)
 
             pull(
-              invite.pubs,
+              pull.values(invite.pubs),
               paramap(
                 function (addr, cb) {
-                  sbot.gossip.connect(addr, function (err, something) {
-                    if (err) cb(false)
-                    else cb(true)
+                  sbot.gossip.add(addr, function (err, something) {
+                    if (err) cb(null, false)
+                    else cb(null, true)
                   })
                 },
                 3
               ),
               pull.filter(Boolean),
               pull.collect(function (_, results) {
-                if (results.length === 0) cb(new Error('ssb-peer-invite failed to connect to any pubs'))
+                if (results.length === 0) cb(new Error('ssb-peer-invite failed to add any pubs'))
                 else cb(null, confirm)
               })
             )
