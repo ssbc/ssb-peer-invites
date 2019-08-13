@@ -492,8 +492,8 @@ exports.init = function (sbot, config) {
       getConfirm(invite_id, accept, function (err, confirm) {
         if (err) return cb(err)
         if(confirm) {
-          console.error('ssb-peer-invites: Invite already confirmed')
-          return cb(new Error('ssb-peer-invites: Invite already confirmed'))
+          // Invite already confirmed
+          return cb(null, confirm)
         }
 
         connectFirst(invite, function (err, rpc) {
