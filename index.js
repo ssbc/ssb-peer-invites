@@ -502,23 +502,10 @@ exports.init = function (sbot, config) {
             //TODO: store confirms for us in the state.
             if (err) return cb(err)
 
-            pull(
-              pull.values(invite.pubs),
-              paramap(
-                function (addr, cb) {
-                  sbot.gossip.add(addr, function (err, something) {
-                    if (err) cb(null, false)
-                    else cb(null, true)
-                  })
-                },
-                3
-              ),
-              pull.filter(Boolean),
-              pull.collect(function (_, results) {
-                if (results.length === 0) cb(new Error('ssb-peer-invite failed to add any pubs'))
-                else cb(null, confirm)
-              })
-            )
+            ;(invite.pubs || []).forEach(function (addr) {
+              sbot.gossip.add(addr)
+            })
+            cb(null, confirm)
           })
         })
       })
