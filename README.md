@@ -36,7 +36,7 @@ then restart your sbot local server, there will be a bit of
 index building, then you can create invites!
 
 ```
->sbot peerInvites.create
+>sbot peerInvites.create --private 'message for receiver' --reveal 'will be public'
 invite_code...
 ```
 send `invite_code` to your friend and they can use
@@ -59,15 +59,15 @@ accept_message...
 
 ## peer invites - how it works
 
-host (peer creating the invite) generates a _seed_, and publishes an invitation
-message (`type:'peer-invite'`) for their guest (new peer, receiving the invite)
-The message may contain both a private and a reveal section.
-(private section is only readably be the guest, but reveal is published
-if they guest accepts the invite).
+host (peer creating the invite) generates a _seed_, and publishes an
+invitation message (`type:'peer-invite'`) for their guest (new peer,
+receiving the invite) The message may contain both a private and a
+reveal section (private section is only readable by the guest, but
+reveal is published if the guest accepts the invite).
 
 The host then checks for peers that have a public address and follow them.
 The host provides the guest with the `seed` the invite message id, and
-a short list of [pub addresse](http://github.com/ssbc/ssb-device-address) that may process the invite.
+a short list of [pub addresses](http://github.com/ssbc/ssb-device-address) that may process the invite.
 
 The guest accepting the invite is a two step process. First they use the
 seed and the pub addresses to connect to a pub and request the invite message.
@@ -117,9 +117,9 @@ or links to threads or channels, or peers to follow.
 on success, cb is called with an invite string, 
 this should be passed to the guest, who uses it with `openInvite` and `acceptInvite`
 
-If `allowWithoutPubs` is set, the invite will be created without finding any pubs.
-if `pubs` is provided this will be used the invite's pubs. `pubs` should be a array
-of multiserver addresses.
+If `allowWithoutPubs` is set, the invite will be created without
+finding any pubs. Instead specific `pubs` can be provided as an array of
+multiserver addresses.
 
 ### peerInvites.openInvite(invite, cb(err, data))
 
