@@ -17,6 +17,7 @@ var createSbot = require('ssb-server')
   .use(require('ssb-device-address'))
   .use(require('ssb-identities'))
   .use(require('ssb-friends'))
+  .use(require('ssb-gossip'))
   .use(require('../'))
 
 function toId(msg) {
