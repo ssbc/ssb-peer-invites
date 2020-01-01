@@ -131,7 +131,7 @@ firstly opening the invite, then accepting (on peer confirmation)
 calling openInvite will not publish a message, but may make a network connection
 (if you do not already possess the `invite_msg` which you won't the first time)
 
-the if the invite validated, the data argument is provided.
+then if the invite validated, the data argument is provided.
 ```
 data = {
   key: invite_id, //id of the invite message
