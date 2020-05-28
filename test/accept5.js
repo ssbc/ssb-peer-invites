@@ -5,7 +5,6 @@ var ssbKeys = require('ssb-keys')
 var tape = require('tape')
 
 var createSbot = require('ssb-server')
-  .use(require('ssb-links'))
   .use({
     name: 'replicate', version: '1.0.0',
     manifest: { request: 'sync' },

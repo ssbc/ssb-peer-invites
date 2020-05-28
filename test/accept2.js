@@ -6,7 +6,6 @@ var ssbKeys = require('ssb-keys')
 var tape = require('tape')
 
 var createSbot = require('ssb-server')
-  .use(require('ssb-links'))
   .use({
     name: 'replicate', version: '1.0.0',
     manifest: { request: 'sync' },
@@ -27,14 +26,14 @@ var alice = createSbot({
   temp: true,
   timeout: 1000,
   port: 12342,
-  keys:ssbKeys.generate(),
+  keys: ssbKeys.generate(),
   caps: caps
 })
 var bob = createSbot({
   temp: true,
   timeout: 1000,
   port: 12343,
-  keys:ssbKeys.generate(),
+  keys: ssbKeys.generate(),
   caps: caps
 })
 

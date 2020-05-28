@@ -6,7 +6,6 @@ var tape = require('tape')
 var pull = require('pull-stream')
 
 var createSbot = require('ssb-server')
-  .use(require('ssb-links'))
   .use({
     name: 'replicate', version: '1.0.0',
     manifest: { request: 'sync' },

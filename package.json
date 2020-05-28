@@ -20,15 +20,14 @@
   },
   "devDependencies": {
     "explain-error": "^1.0.4",
-    "ssb-device-address": "1.1.4",
-    "ssb-friends": "^3.1.13",
+    "ssb-device-address": "^1.1.6",
+    "ssb-friends": "^4.1.4",
     "ssb-gossip": "^1.0.9",
     "ssb-identities": "^2.0.7",
-    "ssb-links": "^3.0.4",
     "ssb-query": "^2.3.0",
     "ssb-replicate": "^1.2.3",
-    "ssb-server": "14.1.9",
-    "ssb-validate": "^3.0.11",
+    "ssb-server": "^16.0.0",
+    "ssb-validate": "^4.1.0",
     "tape": "^4.10.1"
   },
   "scripts": {

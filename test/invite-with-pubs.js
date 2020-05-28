@@ -5,7 +5,6 @@ var tape = require('tape')
 var u = require('../util')
 
 var createSbot = require('ssb-server')
-  .use(require('ssb-links'))
   .use(require('ssb-replicate'))
   .use(require('ssb-gossip'))
   .use(require('ssb-query'))
