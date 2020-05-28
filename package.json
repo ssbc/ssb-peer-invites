@@ -1,7 +1,7 @@
 {
   "name": "ssb-peer-invites",
   "description": "",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "homepage": "https://github.com/ssbc/ssb-peer-invites",
   "repository": {
     "type": "git",

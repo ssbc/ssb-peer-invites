@@ -67,7 +67,7 @@ exports.init = function (sbot, config) {
   var layer = sbot.friends.createLayer('peer-invites')
 
   var caps = config.caps || {}
-  caps.peerInvite = caps.peerInvite || cap
+  caps.peerInvite = caps.peerInvite || caps
   var initial = {invites: {}, accepts: {}, hosts: {}, guests: {}}
 
   function reduce (acc, data, _seq) {
