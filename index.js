@@ -127,8 +127,9 @@ exports.init = function (sbot, config) {
 
   var state
   //a hack here, so that we can grab a handle on invites.value.set
+  const VIEW_INDEX = 4
   var invites = sbot._flumeUse('peer-invites', function (log, name) {
-    var _invites = Reduce(3, reduce, null, null, initial)(log, name)
+    var _invites = Reduce(VIEW_INDEX, reduce, null, null, initial)(log, name)
     state = _invites.value
     return _invites
   })
